@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funções de Rittner - Advanced Multi-Function Plotter</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bibliotecas Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.0.0/math.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <!-- Import Map para Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #0284C7;
+            --primary-hover: #0369A1;
+            --primary-glow: rgba(2, 132, 199, 0.15);
+            --bg-canvas: #F8FAFC;
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-solid: #FFFFFF;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --border: rgba(226, 232, 240, 0.9);
+            --border-hover: #CBD5E1;
+            --danger: #EF4444;
+            --success: #10B981;
+            
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            --radius-md: 12px;
+            --radius-lg: 18px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.dark-mode {
+            --primary: #38BDF8;
+            --primary-hover: #0EA5E9;
+            --primary-glow: rgba(56, 189, 248, 0.2);
+            --bg-canvas: #090D16;
+            --surface: rgba(15, 23, 42, 0.88);
+            --surface-solid: #0F172A;
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --border: rgba(51, 65, 85, 0.8);
+            --border-hover: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            overflow: hidden;
+            color: var(--text-main);
+            transition: background-color 0.3s ease;
+        }
+
+        #plot-2d, #plot-3d {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            transition: opacity 0.4s ease;
+        }
+
+        #plot-3d { opacity: 0; pointer-events: none; }
+        .mode-3d #plot-3d { opacity: 1; pointer-events: all; }
+        .mode-3d #plot-2d { opacity: 0; pointer-events: none; }
+
+        .sidebar {
+            position: absolute;
+            top: 24px;
+            width: 380px;
+            max-height: calc(100vh - 48px);
+            background: var(--surface);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        }
+
+        .sidebar-left { left: 24px; }
+        .sidebar-right { right: 24px; }
+
+        .sidebar.hidden {
+            transform: translateX(120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .sidebar-left.hidden { transform: translateX(-120%); }
+
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
+        .sidebar::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 10px; }
+
+        .header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-group {
+            display: flex;
+            background: var(--border);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 2px;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .toggle-btn.active {
+            background: var(--surface-solid);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+        }
+
+        .select-input, .math-input, .axis-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            background: var(--surface-solid);
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            color: var(--text-main);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .select-input {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+
+        .select-input:focus, .math-input:focus, .axis-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+
+        .fn-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .fn-color-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px var(--border);
+        }
+
+        .input-group {
+            position: relative;
+            flex: 1;
+        }
+
+        .input-label {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.85rem;
+            z-index: 2;
+        }
+
+        .math-input {
+            padding-left: 55px;
+            padding-right: 32px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .btn-remove-fn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        .btn-remove-fn:hover {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .error-msg {
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .axis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .axis-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .axis-item span {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .time-controller {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--border);
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+        }
+
+        .btn-icon {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+
+        .btn-icon:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.05); }
+
+        input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 5px;
+            background: var(--border-hover);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .time-display {
+            font-variant-numeric: tabular-nums;
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 42px;
+            color: var(--text-main);
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .setting-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider-switch {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-hover);
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 24px;
+        }
+
+        .slider-switch:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+        }
+
+        input:checked + .slider-switch { background-color: var(--primary); }
+        input:checked + .slider-switch:before { transform: translateX(20px); }
+
+        .btn-primary {
+            width: 100%;
+            padding: 11px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+            margin-bottom: 8px;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .top-controls {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .bottom-corner-btn {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            z-index: 11;
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 11px 18px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .bottom-corner-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal-card {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 680px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 32px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 14px;
+        }
+
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            font-size: 0.88rem;
+        }
+        .info-table th, .info-table td {
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            text-align: left;
+        }
+
+        .fab-btn {
+            background: var(--surface-solid);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .helper-text {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .calc-info {
+            background: var(--border);
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            font-size: 0.82rem;
+            color: var(--text-main);
+            margin-top: 8px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .param-slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .param-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: calc(100vw - 32px);
+                max-height: 45vh;
+                top: auto;
+                bottom: 16px;
+                left: 16px !important;
+                right: 16px !important;
+            }
+            .sidebar-right { display: none; }
+            .top-controls { top: 12px; width: 90%; justify-content: center; }
+            .bottom-corner-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="plot-2d"></div>
+    <div id="plot-3d"></div>
+
+    <div class="top-controls">
+        <button class="fab-btn" onclick="toggleDarkMode()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <span id="dark-btn-text">Dark Mode</span>
+        </button>
+        <button class="fab-btn" onclick="togglePresentationMode()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            <span id="pres-btn-text">Apresentação</span>
+        </button>
+    </div>
+
+    <!-- BOTÃO FIXADO NO CANTO INFERIOR DIREITO -->
+    <button class="bottom-corner-btn" onclick="openInfoModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        Guia de Sinais e Níveis
+    </button>
+
+    <div class="modal-overlay" id="info-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">📖 Guia de Sinais e Tipos de Funções</div>
+                <button class="modal-close" onclick="closeInfoModal()">✕</button>
+            </div>
+            
+            <div class="section-title">1. Operadores Matemáticos</div>
+            <table class="info-table">
+                <tr><th>Sinal</th><th>Operação</th><th>Exemplo</th></tr>
+                <tr><td><code>+</code>, <code>-</code>, <code>*</code>, <code>/</code></td><td>Aritmética Básica</td><td><code>a*x + b</code></td></tr>
+                <tr><td><code>^</code></td><td>Potenciação</td><td><code>x^2 + a</code></td></tr>
+                <tr><td><code>sqrt()</code></td><td>Raiz Quadrada</td><td><code>sqrt(x^2 + y^2)</code></td></tr>
+                <tr><td><code>sin()</code>, <code>cos()</code>, <code>tan()</code></td><td>Trigonometria</td><td><code>sin(a*x - t)</code></td></tr>
+            </table>
+
+            <div class="section-title" style="margin-top: 16px;">2. Modos de Representação</div>
+            <table class="info-table">
+                <tr><th>Modo</th><th>Formato</th><th>Variáveis Suportadas</th></tr>
+                <tr><td><b>2D Explícito</b></td><td>y = f(x)</td><td>x, t, a, b, c</td></tr>
+                <tr><td><b>3D Superfície</b></td><td>z = f(x, y)</td><td>x, y, t, a, b, c</td></tr>
+                <tr><td><b>Campo de Vetores (EDO)</b></td><td>dy/dx = f(x, y)</td><td>x, y, t</td></tr>
+            </table>
+            
+            <button class="btn-primary" onclick="closeInfoModal()">Entendido</button>
+        </div>
+    </div>
+
+    <!-- PAINEL ESQUERDO -->
+    <div class="sidebar sidebar-left" id="sidebar-left">
+        <div class="header">
+            <div class="logo">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20"/><path d="M6.5 2L20 22"/><path d="M12 12l8-8"/></svg>
+                Funções de Rittner
+            </div>
+            <div class="toggle-group">
+                <button class="toggle-btn active" id="btn-mode-2d" onclick="setMode('2D')">2D</button>
+                <button class="toggle-btn" id="btn-mode-3d" onclick="setMode('3D')">3D</button>
+                <button class="toggle-btn" id="btn-mode-ode" onclick="setMode('ODE')">EDO</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Nível Pedagógico</div>
+            <select id="level-select" class="select-input" onchange="setPedagogicalLevel(this.value)">
+                <option value="fundamental">Ensino Fundamental (6º ao 9º ano)</option>
+                <option value="medio" selected>Ensino Médio (1º ao 3º ano)</option>
+                <option value="superior">Faculdade / Ensino Superior</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Biblioteca de Presets</div>
+            <select id="preset-select" class="select-input" onchange="loadPreset(this.value)">
+                <option value="">Selecione uma função padrão...</option>
+            </select>
+        </div>
+
+        <!-- EDITOR MULTI-FUNÇÃO -->
+        <div class="section">
+            <div class="section-title">Editor de Equações</div>
+            <div id="functions-container"></div>
+            <button class="btn-secondary" style="margin-top: 8px;" onclick="addFunctionInput()">+ Adicionar Função</button>
+            <div class="error-msg" id="fn-error">Erro na expressão matemática</div>
+            <p class="helper-text">Variáveis: <b>x</b>, tempo <b>t</b>, parâmetros <b>a, b, c</b>.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Parâmetros Dinâmicos (a, b, c)</div>
+            <div class="param-slider-group">
+                <div class="param-row">
+                    <span>a = <b id="val-a">1.0</b></span>
+                    <input type="range" id="slider-a" min="-5" max="5" step="0.1" value="1" oninput="updateParam('a', this.value)">
+                </div>
+                <div class="param-row">
+                    <span>b = <b id="val-b">4.0</b></span>
+                    <input type="range" id="slider-b" min="-5" max="5" step="0.1" value="4" oninput="updateParam('b', this.value)">
+                </div>
+                <div class="param-row">
+                    <span>c = <b id="val-c">0.0</b></span>
+                    <input type="range" id="slider-c" min="-5" max="5" step="0.1" value="0" oninput="updateParam('c', this.value)">
+                </div>
+            </div>
+        </div>
+
+        <div class="section" id="section-2d-axis">
+            <div class="section-title">Intervalo dos Eixos</div>
+            <div class="axis-grid">
+                <div class="axis-item">
+                    <span>X Mín / Máx</span>
+                    <div style="display:flex; gap:4px;">
+                        <input type="number" id="xmin-input" class="axis-input" value="-10" oninput="updateAxisRanges()">
+                        <input type="number" id="xmax-input" class="axis-input" value="10" oninput="updateAxisRanges()">
+                    </div>
+                </div>
+                <div class="axis-item">
+                    <span>Y Mín / Máx</span>
+                    <div style="display:flex; gap:4px;">
+                        <input type="number" id="ymin-input" class="axis-input" value="-10" oninput="updateAxisRanges()">
+                        <input type="number" id="ymax-input" class="axis-input" value="10" oninput="updateAxisRanges()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Visualização & Malha GeoGebra</div>
+            <div class="setting-row" style="margin-bottom: 10px;">
+                <span class="setting-label">Malha Quadriculada</span>
+                <label class="switch">
+                    <input type="checkbox" id="grid-toggle" checked onchange="toggleGrid(this.checked)">
+                    <span class="slider-switch"></span>
+                </label>
+            </div>
+            <div class="setting-row">
+                <span class="setting-label">Números nos Eixos / Malha</span>
+                <label class="switch">
+                    <input type="checkbox" id="numbers-toggle" checked onchange="toggleGridNumbers(this.checked)">
+                    <span class="slider-switch"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="section" style="border-bottom: none;">
+            <div class="section-title">Controle Temporal (t)</div>
+            <div class="time-controller">
+                <button class="btn-icon" id="btn-play" onclick="togglePlay()">⏸</button>
+                <input type="range" id="time-slider" min="0" max="20" step="0.05" value="0">
+                <div class="time-display" id="time-display">0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAINEL DIREITO -->
+    <div class="sidebar sidebar-right" id="sidebar-right">
+        <div class="header">
+            <div class="logo" style="color: var(--text-main);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Cálculo & Exportação
+            </div>
+        </div>
+
+        <div class="section" id="section-calculus">
+            <div class="section-title">Cálculo Diferencial e Integral (1ª Função)</div>
+            
+            <div class="setting-row" style="margin-bottom: 8px;">
+                <span class="setting-label">Reta Tangente (Derivada)</span>
+                <label class="switch">
+                    <input type="checkbox" id="tangent-toggle" checked onchange="toggleTangent(this.checked)">
+                    <span class="slider-switch"></span>
+                </label>
+            </div>
+            <div class="time-controller" style="margin-bottom: 12px;">
+                <span style="font-size:0.8rem; font-weight:600; width:24px;">x₀=</span>
+                <input type="range" id="tangent-slider" min="-10" max="10" step="0.1" value="1">
+                <div class="time-display" id="tangent-val">1.00</div>
+            </div>
+            <div class="calc-info" id="derivative-info">Derivada f'(x₀) = 2.00</div>
+
+            <div class="setting-row" style="margin: 14px 0 8px 0;">
+                <span class="setting-label">Área sob a Curva (Integral)</span>
+                <label class="switch">
+                    <input type="checkbox" id="integral-toggle" checked onchange="toggleIntegral(this.checked)">
+                    <span class="slider-switch"></span>
+                </label>
+            </div>
+            <div class="axis-grid" style="margin-bottom: 8px;">
+                <div class="axis-item">
+                    <span>Limite a</span>
+                    <input type="number" id="integral-a" class="axis-input" value="-2" oninput="updateGraph()">
+                </div>
+                <div class="axis-item">
+                    <span>Limite b</span>
+                    <input type="number" id="integral-b" class="axis-input" value="2" oninput="updateGraph()">
+                </div>
+            </div>
+            <div class="calc-info" id="integral-info">∫ f(x)dx ≈ 0.00</div>
+        </div>
+
+        <div class="section" style="border-bottom: none;">
+            <div class="section-title">Exportação de Resultados</div>
+            <button class="btn-primary" onclick="exportData('png')">Exportar Imagem (PNG 4K)</button>
+            <button class="btn-secondary" onclick="exportData('csv')">Exportar Tabela de Dados (CSV)</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const COLOR_PALETTE = ['#0284C7', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'];
+
+        const State = {
+            level: 'medio',
+            mode: '2D', // '2D', '3D', 'ODE'
+            functions: [
+                { id: 1, expr: '-a*x^2 + b*x', color: '#0284C7', compiledFn: null }
+            ],
+            nextFnId: 2,
+            t: 0,
+            params: { a: 1.0, b: 4.0, c: 0.0 },
+            isPlaying: true,
+            showGrid: true,
+            showNumbers: true,
+            showTangent: true,
+            showIntegral: true,
+            isDarkMode: false
+        };
+
+        const errorEl = document.getElementById('fn-error');
+        const tSlider = document.getElementById('time-slider');
+        const tDisplay = document.getElementById('time-display');
+        const btnPlay = document.getElementById('btn-play');
+        const tangentSlider = document.getElementById('tangent-slider');
+        const tangentVal = document.getElementById('tangent-val');
+        const derivativeInfo = document.getElementById('derivative-info');
+        const integralInfo = document.getElementById('integral-info');
+        const sidebarLeft = document.getElementById('sidebar-left');
+        const sidebarRight = document.getElementById('sidebar-right');
+        const presetSelect = document.getElementById('preset-select');
+        const sectionCalculus = document.getElementById('section-calculus');
+        const xminInput = document.getElementById('xmin-input');
+        const xmaxInput = document.getElementById('xmax-input');
+        const yminInput = document.getElementById('ymin-input');
+        const ymaxInput = document.getElementById('ymax-input');
+        const fnContainer = document.getElementById('functions-container');
+
+        const presetsByLevel = {
+            fundamental: [
+                { val: "a*x", label: "Proporcionalidade Direta: a*x" },
+                { val: "a/x", label: "Proporcionalidade Inversa: a/x" },
+                { val: "a*x + b", label: "Função Afim: a*x + b" }
+            ],
+            medio: [
+                { val: "-a*x^2 + b*x", label: "Função Quadrática: -a*x^2 + b*x" },
+                { val: "a^x", label: "Exponencial: a^x" },
+                { val: "sin(a*x - t)", label: "Onda Senoidal: sin(a*x - t)" },
+                { val: "abs(x)", label: "Modular: |x|" }
+            ],
+            superior: [
+                { val: "a*(x^2 + y^2)", label: "Parabolóide 3D: a*(x^2 + y^2)" },
+                { val: "x^2 - y^2", label: "Superfície em Sela 3D: x^2 - y^2" },
+                { val: "x - y + sin(t)", label: "Campo de Vetores (EDO): dy/dx = x - y + sin(t)" }
+            ]
+        };
+
+        window.openInfoModal = function() { document.getElementById('info-modal').classList.add('active'); };
+        window.closeInfoModal = function() { document.getElementById('info-modal').classList.remove('active'); };
+
+        window.updateParam = function(p, val) {
+            State.params[p] = parseFloat(val);
+            document.getElementById(`val-${p}`).innerText = parseFloat(val).toFixed(1);
+            updateGraph();
+        };
+
+        // GESTÃO DE MÚLTIPLAS FUNÇÕES
+        function renderFunctionInputs() {
+            fnContainer.innerHTML = '';
+            const prefix = State.mode === '3D' ? 'z =' : (State.mode === 'ODE' ? 'dy/dx =' : 'y =');
+            
+            State.functions.forEach((fn, idx) => {
+                const div = document.createElement('div');
+                div.className = 'fn-row';
+                div.innerHTML = `
+                    <div class="fn-color-indicator" style="background-color: ${fn.color};"></div>
+                    <div class="input-group">
+                        <span class="input-label">${prefix}</span>
+                        <input type="text" class="math-input" value="${fn.expr}" data-id="${fn.id}" autocomplete="off" spellcheck="false">
+                    </div>
+                    ${State.functions.length > 1 ? `<button class="btn-remove-fn" onclick="removeFunctionInput(${fn.id})" title="Remover">✕</button>` : ''}
+                `;
+                fnContainer.appendChild(div);
+            });
+
+            fnContainer.querySelectorAll('.math-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    const targetFn = State.functions.find(f => f.id === id);
+                    if (targetFn) {
+                        targetFn.expr = e.target.value;
+                        compileMath();
+                        updateGraph();
+                    }
+                });
+            });
+        }
+
+        window.addFunctionInput = function(expr = 'sin(x)') {
+            const color = COLOR_PALETTE[State.functions.length % COLOR_PALETTE.length];
+            State.functions.push({ id: State.nextFnId++, expr: expr, color: color, compiledFn: null });
+            renderFunctionInputs();
+            compileMath();
+            updateGraph();
+        };
+
+        window.removeFunctionInput = function(id) {
+            if (State.functions.length <= 1) return;
+            State.functions = State.functions.filter(f => f.id !== id);
+            renderFunctionInputs();
+            compileMath();
+            updateGraph();
+        };
+
+        window.setPedagogicalLevel = function(level) {
+            State.level = level;
+            presetSelect.innerHTML = '<option value="">Selecione uma função padrão...</option>';
+            
+            presetsByLevel[level].forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.val;
+                opt.innerText = p.label;
+                presetSelect.appendChild(opt);
+            });
+
+            if (level === 'fundamental') {
+                sectionCalculus.style.display = 'none';
+                State.functions = [{ id: 1, expr: "a*x", color: COLOR_PALETTE[0], compiledFn: null }];
+                setMode('2D');
+            } else if (level === 'medio') {
+                sectionCalculus.style.display = 'block';
+                State.functions = [{ id: 1, expr: "-a*x^2 + b*x", color: COLOR_PALETTE[0], compiledFn: null }];
+                setMode('2D');
+            } else if (level === 'superior') {
+                sectionCalculus.style.display = 'block';
+                State.functions = [{ id: 1, expr: "a*(x^2 + y^2)", color: COLOR_PALETTE[0], compiledFn: null }];
+                setMode('3D');
+            }
+            renderFunctionInputs();
+            compileMath();
+            updateGraph();
+        };
+
+        function compileMath() {
+            let hasError = false;
+            State.functions.forEach(fn => {
+                const expr = fn.expr.trim();
+                if (!expr) {
+                    fn.compiledFn = null;
+                    return;
+                }
+                try {
+                    const compiled = math.compile(expr);
+                    compiled.evaluate({ x: 1, y: 1, t: 0, a: 1, b: 1, c: 1 });
+                    fn.compiledFn = compiled;
+                } catch (err) {
+                    fn.compiledFn = null;
+                    hasError = true;
+                }
+            });
+
+            if (hasError) {
+                errorEl.innerText = "Sintaxe inválida em uma das expressões.";
+                errorEl.style.display = 'block';
+            } else {
+                errorEl.style.display = 'none';
+            }
+        }
+
+        tSlider.addEventListener('input', (e) => { 
+            State.t = parseFloat(e.target.value); 
+            tDisplay.innerText = State.t.toFixed(2);
+            if(!State.isPlaying) updateGraph();
+        });
+
+        tangentSlider.addEventListener('input', (e) => {
+            tangentVal.innerText = parseFloat(e.target.value).toFixed(2);
+            updateGraph();
+        });
+
+        window.toggleTangent = function(val) { State.showTangent = val; updateGraph(); };
+        window.toggleIntegral = function(val) { State.showIntegral = val; updateGraph(); };
+
+        window.loadPreset = function(key) {
+            if(!key) return;
+            State.functions[0].expr = key;
+            if(key.includes('y') && State.mode !== '3D' && State.mode !== 'ODE') {
+                setMode('3D');
+            }
+            renderFunctionInputs();
+            compileMath();
+            updateGraph();
+        };
+
+        window.toggleDarkMode = function() {
+            State.isDarkMode = !State.isDarkMode;
+            document.body.classList.toggle('dark-mode', State.isDarkMode);
+            document.getElementById('dark-btn-text').innerText = State.isDarkMode ? 'Light Mode' : 'Dark Mode';
+            
+            const bg = State.isDarkMode ? '#090D16' : '#F8FAFC';
+            const gridColor = State.isDarkMode ? '#1E293B' : '#E2E8F0';
+            const textColor = State.isDarkMode ? '#94A3B8' : '#475569';
+            const zeroline = State.isDarkMode ? '#475569' : '#64748B';
+
+            Plotly.relayout('plot-2d', {
+                paper_bgcolor: bg, plot_bgcolor: bg,
+                'xaxis.gridcolor': gridColor, 'yaxis.gridcolor': gridColor,
+                'xaxis.zerolinecolor': zeroline, 'yaxis.zerolinecolor': zeroline,
+                'xaxis.tickfont.color': textColor, 'yaxis.tickfont.color': textColor
+            });
+
+            scene.background.set(State.isDarkMode ? 0x090D16 : 0xF8FAFC);
+        };
+
+        window.togglePresentationMode = function() {
+            sidebarLeft.classList.toggle('hidden');
+            sidebarRight.classList.toggle('hidden');
+            const hidden = sidebarLeft.classList.contains('hidden');
+            document.getElementById('pres-btn-text').innerText = hidden ? 'Sair Apresentação' : 'Apresentação';
+            setTimeout(() => onWindowResize(), 300);
+        };
+
+        // BOTÕES DE MALHA QUADRICULADA E NÚMEROS NOS EIXOS (ESTILO GEOGEBRA)
+        window.toggleGrid = function(show) {
+            State.showGrid = show;
+            Plotly.relayout('plot-2d', { 'xaxis.showgrid': show, 'yaxis.showgrid': show });
+            grid.visible = show;
+        };
+
+        window.toggleGridNumbers = function(show) {
+            State.showNumbers = show;
+            Plotly.relayout('plot-2d', {
+                'xaxis.showticklabels': show,
+                'yaxis.showticklabels': show
+            });
+        };
+
+        // --- MOTOR PLOTLY 2D ---
+        const layout2D = {
+            margin: { t: 0, r: 0, b: 0, l: 0 },
+            paper_bgcolor: '#F8FAFC',
+            plot_bgcolor: '#F8FAFC',
+            xaxis: { zeroline: true, zerolinecolor: '#64748B', zerolinewidth: 2, gridcolor: '#E2E8F0', range: [-10, 10], showgrid: true, showticklabels: true },
+            yaxis: { zeroline: true, zerolinecolor: '#64748B', zerolinewidth: 2, gridcolor: '#E2E8F0', range: [-10, 10], showgrid: true, showticklabels: true },
+            hovermode: 'closest',
+            dragmode: 'zoom',
+            shapes: []
+        };
+
+        Plotly.newPlot('plot-2d', [], layout2D, { responsive: true, displayModeBar: false, scrollZoom: true });
+
+        document.getElementById('plot-2d').on('plotly_relayout', function(eventData) {
+            if (eventData['xaxis.range[0]'] !== undefined) {
+                xminInput.value = eventData['xaxis.range[0]'].toFixed(2);
+                xmaxInput.value = eventData['xaxis.range[1]'].toFixed(2);
+                yminInput.value = eventData['yaxis.range[0]'].toFixed(2);
+                ymaxInput.value = eventData['yaxis.range[1]'].toFixed(2);
+                updateGraph();
+            }
+        });
+
+        window.updateAxisRanges = function() {
+            const xmin = parseFloat(xminInput.value) || -10;
+            const xmax = parseFloat(xmaxInput.value) || 10;
+            const ymin = parseFloat(yminInput.value) || -10;
+            const ymax = parseFloat(ymaxInput.value) || 10;
+            Plotly.relayout('plot-2d', { 'xaxis.range': [xmin, xmax], 'yaxis.range': [ymin, ymax] });
+        };
+
+        function update2D() {
+            const xmin = parseFloat(xminInput.value) || -10;
+            const xmax = parseFloat(xmaxInput.value) || 10;
+            const numPoints = 800;
+            const step = (xmax - xmin) / numPoints;
+            const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
+
+            const traces = [];
+
+            // Plotar todas as funções ativas
+            State.functions.forEach((fnObj) => {
+                if (!fnObj.compiledFn) return;
+                const xVals = [], yVals = [];
+                for (let i = 0; i <= numPoints; i++) {
+                    let x = xmin + i * step;
+                    scope.x = x;
+                    try {
+                        let y = fnObj.compiledFn.evaluate(scope);
+                        if (typeof y !== 'number' || isNaN(y) || !isFinite(y)) y = null;
+                        xVals.push(x); yVals.push(y);
+                    } catch (e) {
+                        xVals.push(x); yVals.push(null);
+                    }
+                }
+                traces.push({
+                    x: xVals, y: yVals, type: 'scatter', mode: 'lines',
+                    line: { color: fnObj.color, width: 3 }, name: fnObj.expr
+                });
+            });
+
+            // Cálculo Diferencial/Integral aplicado à primeira função
+            const primaryFn = State.functions[0] ? State.functions[0].compiledFn : null;
+            
+            let intX = [], intY = [], integralVal = 0;
+            if (State.showIntegral && State.level !== 'fundamental' && primaryFn) {
+                const a = parseFloat(document.getElementById('integral-a').value) || -2;
+                const b = parseFloat(document.getElementById('integral-b').value) || 2;
+                const n = 100;
+                const h = (b - a) / n;
+                intX.push(a); intY.push(0);
+                for (let i = 0; i <= n; i++) {
+                    let xi = a + i * h;
+                    scope.x = xi;
+                    let yi = 0;
+                    try {
+                        yi = primaryFn.evaluate(scope);
+                        if (typeof yi !== 'number' || isNaN(yi) || !isFinite(yi)) yi = 0;
+                    } catch(e) { yi = 0; }
+                    
+                    intX.push(xi); intY.push(yi);
+                    if (i > 0 && i < n) integralVal += yi;
+                    else if (i === 0 || i === n) integralVal += yi / 2;
+                }
+                integralVal *= h;
+                intX.push(b); intY.push(0);
+                integralInfo.innerText = `∫ f₁(x)dx ≈ ${integralVal.toFixed(4)}`;
+                
+                traces.push({
+                    x: intX, y: intY, type: 'scatter', mode: 'tozeroy', fill: 'tozeroy',
+                    fillcolor: 'rgba(2, 132, 199, 0.15)', line: { color: 'transparent' }, name: 'Integral (f₁)'
+                });
+            } else {
+                integralInfo.innerText = `∫ f(x)dx ≈ 0.00`;
+            }
+
+            let tanX = [], tanY = [], ptX = [], ptY = [];
+            if (State.showTangent && State.level !== 'fundamental' && primaryFn) {
+                const x0 = parseFloat(tangentSlider.value);
+                scope.x = x0;
+                let y0 = 0, yPlus = 0, yMinus = 0;
+                try {
+                    y0 = primaryFn.evaluate(scope);
+                    const delta = 0.0001;
+                    scope.x = x0 + delta;
+                    yPlus = primaryFn.evaluate(scope);
+                    scope.x = x0 - delta;
+                    yMinus = primaryFn.evaluate(scope);
+                } catch(e) {}
+                
+                let deriv = (yPlus - yMinus) / 0.0002;
+                if (isNaN(deriv) || !isFinite(deriv)) deriv = 0;
+
+                derivativeInfo.innerText = `Derivada f₁'(${x0.toFixed(2)}) = ${deriv.toFixed(4)}`;
+                
+                let tanLen = (xmax - xmin) * 0.15;
+                tanX = [x0 - tanLen, x0 + tanLen];
+                tanY = [y0 - deriv * tanLen, y0 + deriv * tanLen];
+                ptX = [x0]; ptY = [y0];
+
+                traces.push({ x: tanX, y: tanY, type: 'scatter', mode: 'lines', line: { color: '#EF4444', width: 2, dash: 'dash' }, name: 'Reta Tangente' });
+                traces.push({ x: ptX, y: ptY, type: 'scatter', mode: 'markers', marker: { color: '#EF4444', size: 10 }, name: 'P(x₀)' });
+            } else {
+                derivativeInfo.innerText = `Derivada f'(x₀) = 0.00`;
+            }
+
+            Plotly.react('plot-2d', traces, layout2D);
+        }
+
+        function updateODE() {
+            const fnObj = State.functions[0];
+            if (!fnObj || !fnObj.compiledFn) return;
+            const xmin = -10, xmax = 10, ymin = -10, ymax = 10;
+            const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
+            
+            const shapes = [];
+            const lineColor = State.isDarkMode ? '#38BDF8' : '#0284C7';
+            
+            for (let x = xmin; x <= xmax; x += 1.2) {
+                for (let y = ymin; y <= ymax; y += 1.2) {
+                    scope.x = x; scope.y = y;
+                    try {
+                        let slope = fnObj.compiledFn.evaluate(scope);
+                        if (typeof slope === 'number' && !isNaN(slope) && isFinite(slope)) {
+                            let angle = Math.atan(slope);
+                            let len = 0.3;
+                            let dx = len * Math.cos(angle);
+                            let dy = len * Math.sin(angle);
+                            
+                            shapes.push({
+                                type: 'line', x0: x - dx, y0: y - dy, x1: x + dx, y1: y + dy,
+                                line: { color: lineColor, width: 2 }
+                            });
+                        }
+                    } catch (e) {}
+                }
+            }
+
+            Plotly.react('plot-2d', [], Object.assign({}, layout2D, { shapes: shapes }));
+        }
+
+        // --- MOTOR THREE.JS 3D ---
+        const container3D = document.getElementById('plot-3d');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xF8FAFC);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(15, 15, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container3D.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        const grid = new THREE.GridHelper(20, 40, 0x94A3B8, 0xE2E8F0);
+        grid.position.y = -0.01;
+        scene.add(grid);
+
+        const geometry = new THREE.PlaneGeometry(20, 20, 80, 80);
+        geometry.rotateX(-Math.PI / 2);
+        
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x38BDF8, wireframe: false, side: THREE.DoubleSide,
+            transparent: true, opacity: 0.9, roughness: 0.2
+        });
+        
+        const surface = new THREE.Mesh(geometry, material);
+        scene.add(surface);
+
+        function update3D() {
+            const fnObj = State.functions[0];
+            if (!fnObj || !fnObj.compiledFn) return;
+            const positions = geometry.attributes.position;
+            const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
+            for (let i = 0; i < positions.count; i++) {
+                let x = positions.getX(i);
+                let z = positions.getZ(i);
+                scope.x = x; scope.y = z;
+                try {
+                    let yCalc = fnObj.compiledFn.evaluate(scope);
+                    if (typeof yCalc !== 'number' || isNaN(yCalc)) yCalc = 0;
+                    positions.setY(i, Math.max(-15, Math.min(15, yCalc)));
+                } catch (e) { positions.setY(i, 0); }
+            }
+            positions.needsUpdate = true;
+            geometry.computeVertexNormals();
+        }
+
+        function updateGraph() {
+            if (State.mode === '2D') update2D();
+            else if (State.mode === 'ODE') updateODE();
+            else if (State.mode === '3D') update3D();
+        }
+
+        function renderFrame() {
+            if (State.isPlaying) {
+                State.t += 0.03;
+                if (State.t > parseFloat(tSlider.max)) State.t = 0;
+                tSlider.value = State.t;
+                tDisplay.innerText = State.t.toFixed(2);
+                updateGraph();
+            }
+            if (State.mode === '3D') { controls.update(); renderer.render(scene, camera); }
+            requestAnimationFrame(renderFrame);
+        }
+
+        window.togglePlay = function() {
+            State.isPlaying = !State.isPlaying;
+            btnPlay.innerText = State.isPlaying ? '⏸' : '▶';
+        };
+
+        window.setMode = function(mode) {
+            State.mode = mode;
+            document.body.className = `mode-${mode.toLowerCase()}` + (State.isDarkMode ? ' dark-mode' : '');
+            
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-mode-${mode.toLowerCase()}`).classList.add('active');
+
+            if (mode !== 'ODE') {
+                layout2D.shapes = [];
+                Plotly.relayout('plot-2d', { shapes: [] });
+            }
+
+            if (mode === '3D') {
+                document.getElementById('section-2d-axis').style.display = 'none';
+            } else {
+                document.getElementById('section-2d-axis').style.display = 'block';
+            }
+            renderFunctionInputs();
+            compileMath();
+            updateGraph();
+            onWindowResize();
+        };
+
+        // EXPORTAÇÃO CSV E IMAGEM
+        window.exportData = function(format) {
+            if (format === 'csv') {
+                let csvContent = "data:text/csv;charset=utf-8,X,Y,Z\n";
+                const fnObj = State.functions[0];
+                const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
+                
+                for (let x = -10; x <= 10; x += 0.5) {
+                    if (State.mode === '3D') {
+                        for (let y = -10; y <= 10; y += 0.5) {
+                            scope.x = x; scope.y = y;
+                            let z = 0;
+                            try { z = fnObj && fnObj.compiledFn ? fnObj.compiledFn.evaluate(scope) : 0; } catch(e) {}
+                            csvContent += `${x},${y},${z}\n`;
+                        }
+                    } else {
+                        scope.x = x;
+                        let y = 0;
+                        try { y = fnObj && fnObj.compiledFn ? fnObj.compiledFn.evaluate(scope) : 0; } catch(e) {}
+                        csvContent += `${x},${y},0\n`;
+                    }
+                }
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `rittner_export_${State.mode}.csv`);
+                document.body.appendChild(link);
+                link.click();
+            } else {
+                if(State.mode === '3D') {
+                    renderer.render(scene, camera);
+                    const link = document.createElement('a');
+                    link.download = 'Rittner_3D.png';
+                    link.href = renderer.domElement.toDataURL('image/png');
+                    link.click();
+                } else {
+                    Plotly.downloadImage('plot-2d', {format: 'png', width: 1920, height: 1080, filename: 'Rittner_2D'});
+                }
+            }
+        };
+
+        function onWindowResize() {
+            if (State.mode === '3D') {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            } else {
+                Plotly.Plots.resize('plot-2d');
+            }
+        }
+        window.addEventListener('resize', onWindowResize);
+
+        setPedagogicalLevel('medio');
+        renderFunctionInputs();
+        compileMath();
+        renderFrame();
+    </script>
+</body>
+</html>
