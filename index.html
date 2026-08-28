@@ -4,19 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Funções de Rittner - Advanced Multi-Function Plotter</title>
-    <meta name="description" content="Plotter matemático multifunções avançado. Gráficos 2D, superfícies 3D e campos de vetores para equações diferenciais ordinárias (EDO).">
     
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <meta name="google-site-verification" content="5tsXZWmt8ytgS4tIVDWHIlebR4NrGx4gw5etCzDcZMA" />
-    
-    <!-- Bibliotecas Externas -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.0.0/math.js"></script>
-    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 
-    <!-- Import Map para Three.js -->
+    <meta name="description" content="Visualizador interativo de funções matemáticas em 2D, 3D e EDO. Calcule derivadas, integrais e explore conceitos com animações e parâmetros em tempo real.">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.0.0/math.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <script type="importmap">
         {
             "imports": {
@@ -112,11 +109,15 @@
         .sidebar-right { right: 24px; }
 
         .sidebar.hidden {
-            transform: translateX(120%);
-            opacity: 0;
-            pointer-events: none;
+            transform: translateX(120%) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
-        .sidebar-left.hidden { transform: translateX(-120%); }
+        .sidebar-left.hidden { 
+            transform: translateX(-120%) !important; 
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
 
         .sidebar::-webkit-scrollbar { width: 6px; }
         .sidebar::-webkit-scrollbar-track { background: transparent; }
@@ -178,6 +179,9 @@
             color: var(--text-muted);
             letter-spacing: 0.06em;
             margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .select-input, .math-input, .axis-input {
@@ -208,22 +212,37 @@
             box-shadow: 0 0 0 4px var(--primary-glow);
         }
 
+        .math-input.input-error {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15);
+        }
+
         .fn-row {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
+            position: relative;
         }
 
-        .fn-color-indicator {
-            width: 14px;
-            height: 14px;
+        .color-picker {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #ffffff;
             border-radius: 50%;
-            flex-shrink: 0;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.25);
             cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 0 0 1px var(--border);
+            padding: 0;
+            outline: none;
+            background: transparent;
+            flex-shrink: 0;
         }
+        .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
+        .color-picker::-moz-color-swatch { border: none; border-radius: 50%; }
 
         .input-group {
             position: relative;
@@ -257,7 +276,6 @@
             border-radius: 4px;
             transition: var(--transition);
         }
-
         .btn-remove-fn:hover {
             color: var(--danger);
             background: rgba(239, 68, 68, 0.1);
@@ -282,7 +300,6 @@
             flex-direction: column;
             gap: 4px;
         }
-
         .axis-item span {
             font-size: 0.75rem;
             font-weight: 600;
@@ -311,7 +328,6 @@
             color: var(--text-main);
             transition: var(--transition);
         }
-
         .btn-icon:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.05); }
 
         input[type=range] {
@@ -322,7 +338,6 @@
             border-radius: 3px;
             outline: none;
         }
-
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 16px;
@@ -331,6 +346,10 @@
             background: var(--primary);
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
         }
 
         .time-display {
@@ -341,244 +360,101 @@
             color: var(--text-main);
         }
 
-        .setting-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+        .setting-row { display: flex; align-items: center; justify-content: space-between; }
+        .setting-label { font-size: 0.85rem; font-weight: 500; color: var(--text-main); }
 
-        .setting-label {
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text-main);
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-        }
-
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-
         .slider-switch {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--border-hover);
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 24px;
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-hover); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 24px;
         }
-
         .slider-switch:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 50%;
+            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            background-color: white; transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%;
         }
-
         input:checked + .slider-switch { background-color: var(--primary); }
         input:checked + .slider-switch:before { transform: translateX(20px); }
 
-        .btn-primary {
-            width: 100%;
-            padding: 11px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-size: 0.88rem;
-            cursor: pointer;
-            transition: var(--transition);
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
-            margin-bottom: 8px;
+        .btn-primary, .btn-secondary {
+            width: 100%; padding: 11px; border-radius: var(--radius-md); font-weight: 600; font-size: 0.88rem;
+            cursor: pointer; transition: var(--transition);
         }
-
-        .btn-primary:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            width: 100%;
-            padding: 10px;
-            background: transparent;
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
+        .btn-primary { background: var(--primary); color: white; border: none; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3); margin-bottom: 8px; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
 
         .top-controls {
-            position: absolute;
-            top: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 10;
+            position: absolute; top: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10;
         }
 
         .bottom-corner-btn {
-            position: absolute;
-            bottom: 24px;
-            right: 24px;
-            z-index: 11;
-            background: var(--surface-solid);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 11px 18px;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: var(--transition);
+            position: absolute; bottom: 24px; right: 24px; z-index: 11; background: var(--surface-solid);
+            border: 1px solid var(--border); color: var(--text-main); padding: 11px 18px; border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm); font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition);
         }
-
-        .bottom-corner-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
+        .bottom-corner-btn:hover { border-color: var(--primary); color: var(--primary); }
 
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(6px);
-            z-index: 100;
-            display: none;
-            align-items: center;
-            justify-content: center;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px); z-index: 100; display: none; align-items: center; justify-content: center;
         }
         .modal-overlay.active { display: flex; }
-
         .modal-card {
-            background: var(--surface-solid);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            width: 90%;
-            max-width: 680px;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding: 32px;
-            box-shadow: var(--shadow-lg);
+            background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius-lg);
+            width: 90%; max-width: 680px; max-height: 85vh; overflow-y: auto; padding: 32px; box-shadow: var(--shadow-lg);
         }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+        .modal-title { font-size: 1.15rem; font-weight: 700; color: var(--primary); }
+        .modal-close { background: transparent; border: none; font-size: 1.25rem; cursor: pointer; color: var(--text-muted); }
 
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 14px;
-        }
-
-        .modal-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .modal-close {
-            background: transparent;
-            border: none;
-            font-size: 1.25rem;
-            cursor: pointer;
-            color: var(--text-muted);
-        }
-
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            margin-bottom: 20px;
-            font-size: 0.88rem;
-        }
-        .info-table th, .info-table td {
-            border: 1px solid var(--border);
-            padding: 10px 14px;
-            text-align: left;
-        }
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-size: 0.88rem; }
+        .info-table th, .info-table td { border: 1px solid var(--border); padding: 10px 14px; text-align: left; }
 
         .fab-btn {
-            background: var(--surface-solid);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 10px 16px;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            font-weight: 600;
-            font-size: 0.85rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: var(--transition);
+            background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-main);
+            padding: 10px 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); font-weight: 600; font-size: 0.85rem;
+            cursor: pointer; display: flex; align-items: center; gap: 8px; transition: var(--transition);
         }
 
-        .helper-text {
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            margin-top: 6px;
-            line-height: 1.4;
-        }
+        .helper-text { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+        .calc-info { background: var(--border); padding: 10px 12px; border-radius: var(--radius-md); font-size: 0.82rem; color: var(--text-main); margin-top: 8px; font-family: 'Courier New', Courier, monospace; }
 
-        .calc-info {
-            background: var(--border);
-            padding: 10px 12px;
-            border-radius: var(--radius-md);
-            font-size: 0.82rem;
-            color: var(--text-main);
-            margin-top: 8px;
-            font-family: 'Courier New', Courier, monospace;
-        }
+        .param-slider-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .param-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; }
 
-        .param-slider-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 10px;
+        .mobile-tab-bar {
+            display: none; position: fixed; bottom: 0; left: 0; width: 100vw; background: var(--surface-solid);
+            border-top: 1px solid var(--border); z-index: 50;
         }
+        .mobile-tab-btn {
+            flex: 1; padding: 14px; text-align: center; background: transparent; border: none; font-weight: 600;
+            color: var(--text-muted); transition: var(--transition); cursor: pointer; font-size: 0.9rem;
+        }
+        .mobile-tab-btn.active { color: var(--primary); border-top: 3px solid var(--primary); background: var(--primary-glow); }
+        .shortcut-tip { font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; text-align: center; font-weight: 500; }
 
-        .param-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
+        body.presentation-mode #mobile-tab-bar {
+            display: none !important;
         }
 
         @media (max-width: 768px) {
+            .mobile-tab-bar { display: flex; }
             .sidebar {
                 width: calc(100vw - 32px);
-                max-height: 45vh;
+                max-height: calc(100vh - 120px);
                 top: auto;
-                bottom: 16px;
+                bottom: 70px;
                 left: 16px !important;
                 right: 16px !important;
             }
-            .sidebar-right { display: none; }
+            .sidebar-right { transform: translateX(120%); opacity: 0; pointer-events: none; }
+            .sidebar-left.mobile-hidden { transform: translateX(-120%); opacity: 0; pointer-events: none; }
+            .sidebar-right.mobile-active { transform: translateX(0); opacity: 1; pointer-events: all; }
             .top-controls { top: 12px; width: 90%; justify-content: center; }
             .bottom-corner-btn { display: none; }
+            .shortcut-tip { display: none; }
         }
     </style>
 </head>
@@ -588,18 +464,17 @@
     <div id="plot-3d"></div>
 
     <div class="top-controls">
-        <button class="fab-btn" onclick="toggleDarkMode()">
+        <button class="fab-btn" onclick="toggleDarkMode()" aria-label="Alternar Modo Escuro">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             <span id="dark-btn-text">Dark Mode</span>
         </button>
-        <button class="fab-btn" onclick="togglePresentationMode()">
+        <button class="fab-btn" onclick="togglePresentationMode()" aria-label="Alternar Modo de Apresentação">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
             <span id="pres-btn-text">Apresentação</span>
         </button>
     </div>
 
-    <!-- BOTÃO FIXADO NO CANTO INFERIOR DIREITO -->
-    <button class="bottom-corner-btn" onclick="openInfoModal()">
+    <button class="bottom-corner-btn" onclick="openInfoModal()" aria-label="Abrir Guia de Sinais e Níveis">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
         Guia de Sinais e Níveis
     </button>
@@ -607,8 +482,8 @@
     <div class="modal-overlay" id="info-modal">
         <div class="modal-card">
             <div class="modal-header">
-                <div class="modal-title">📖 Guia de Sinais e Tipos de Funções</div>
-                <button class="modal-close" onclick="closeInfoModal()">✕</button>
+                <div class="modal-title">Guia de Sinais e Tipos de Funções</div>
+                <button class="modal-close" onclick="closeInfoModal()" aria-label="Fechar modal">✕</button>
             </div>
             
             <div class="section-title">1. Operadores Matemáticos</div>
@@ -627,28 +502,39 @@
                 <tr><td><b>3D Superfície</b></td><td>z = f(x, y)</td><td>x, y, t, a, b, c</td></tr>
                 <tr><td><b>Campo de Vetores (EDO)</b></td><td>dy/dx = f(x, y)</td><td>x, y, t</td></tr>
             </table>
+
+            <div class="section-title" style="margin-top: 16px;">3. Atalhos de Teclado</div>
+            <table class="info-table">
+                <tr><th>Tecla</th><th>Ação</th></tr>
+                <tr><td><b>Espaço</b></td><td>Pausar/Retomar animação de Tempo (t)</td></tr>
+                <tr><td><b>R</b></td><td>Resetar visualização (Câmera / Zoom)</td></tr>
+            </table>
             
-            <button class="btn-primary" onclick="closeInfoModal()">Entendido</button>
+            <button class="btn-primary" onclick="closeInfoModal()" aria-label="Entendido e fechar modal">Entendido</button>
         </div>
     </div>
 
-    <!-- PAINEL ESQUERDO -->
+    <div class="mobile-tab-bar" id="mobile-tab-bar">
+        <button class="mobile-tab-btn active" onclick="switchMobileTab('left')" aria-label="Aba de Funções">Funções</button>
+        <button class="mobile-tab-btn" id="mobile-tab-right" onclick="switchMobileTab('right')" aria-label="Aba de Cálculos e Dados">Cálculos</button>
+    </div>
+
     <div class="sidebar sidebar-left" id="sidebar-left">
         <div class="header">
             <div class="logo">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20"/><path d="M6.5 2L20 22"/><path d="M12 12l8-8"/></svg>
+                <img src="hipatia.png" alt="Logo" width="30" height="30">
                 Funções de Rittner
             </div>
             <div class="toggle-group">
-                <button class="toggle-btn active" id="btn-mode-2d" onclick="setMode('2D')">2D</button>
-                <button class="toggle-btn" id="btn-mode-3d" onclick="setMode('3D')">3D</button>
-                <button class="toggle-btn" id="btn-mode-ode" onclick="setMode('ODE')">EDO</button>
+                <button class="toggle-btn active" id="btn-mode-2d" onclick="setMode('2D')" aria-label="Modo 2D">2D</button>
+                <button class="toggle-btn" id="btn-mode-3d" onclick="setMode('3D')" aria-label="Modo 3D">3D</button>
+                <button class="toggle-btn" id="btn-mode-ode" onclick="setMode('ODE')" aria-label="Modo EDO">EDO</button>
             </div>
         </div>
 
         <div class="section">
             <div class="section-title">Nível Pedagógico</div>
-            <select id="level-select" class="select-input" onchange="setPedagogicalLevel(this.value)">
+            <select id="level-select" class="select-input" onchange="setPedagogicalLevel(this.value)" aria-label="Selecione o nível pedagógico">
                 <option value="fundamental">Ensino Fundamental (6º ao 9º ano)</option>
                 <option value="medio" selected>Ensino Médio (1º ao 3º ano)</option>
                 <option value="superior">Faculdade / Ensino Superior</option>
@@ -657,17 +543,16 @@
 
         <div class="section">
             <div class="section-title">Biblioteca de Presets</div>
-            <select id="preset-select" class="select-input" onchange="loadPreset(this.value)">
+            <select id="preset-select" class="select-input" onchange="loadPreset(this.value)" aria-label="Selecione um Preset de Função">
                 <option value="">Selecione uma função padrão...</option>
             </select>
         </div>
 
-        <!-- EDITOR MULTI-FUNÇÃO -->
         <div class="section">
             <div class="section-title">Editor de Equações</div>
             <div id="functions-container"></div>
-            <button class="btn-secondary" style="margin-top: 8px;" onclick="addFunctionInput()">+ Adicionar Função</button>
-            <div class="error-msg" id="fn-error">Erro na expressão matemática</div>
+            <button class="btn-secondary" id="btn-add-fn" style="margin-top: 8px;" onclick="addFunctionInput()" aria-label="Adicionar Nova Função">+ Adicionar Função</button>
+            <div class="error-msg" id="fn-error">Verifique a sintaxe matemática nas áreas em vermelho.</div>
             <p class="helper-text">Variáveis: <b>x</b>, tempo <b>t</b>, parâmetros <b>a, b, c</b>.</p>
         </div>
 
@@ -676,15 +561,15 @@
             <div class="param-slider-group">
                 <div class="param-row">
                     <span>a = <b id="val-a">1.0</b></span>
-                    <input type="range" id="slider-a" min="-5" max="5" step="0.1" value="1" oninput="updateParam('a', this.value)">
+                    <input type="range" id="slider-a" min="-5" max="5" step="0.1" value="1" oninput="updateParam('a', this.value)" aria-label="Alterar parâmetro a">
                 </div>
                 <div class="param-row">
                     <span>b = <b id="val-b">4.0</b></span>
-                    <input type="range" id="slider-b" min="-5" max="5" step="0.1" value="4" oninput="updateParam('b', this.value)">
+                    <input type="range" id="slider-b" min="-5" max="5" step="0.1" value="4" oninput="updateParam('b', this.value)" aria-label="Alterar parâmetro b">
                 </div>
                 <div class="param-row">
                     <span>c = <b id="val-c">0.0</b></span>
-                    <input type="range" id="slider-c" min="-5" max="5" step="0.1" value="0" oninput="updateParam('c', this.value)">
+                    <input type="range" id="slider-c" min="-5" max="5" step="0.1" value="0" oninput="updateParam('c', this.value)" aria-label="Alterar parâmetro c">
                 </div>
             </div>
         </div>
@@ -695,15 +580,15 @@
                 <div class="axis-item">
                     <span>X Mín / Máx</span>
                     <div style="display:flex; gap:4px;">
-                        <input type="number" id="xmin-input" class="axis-input" value="-10" oninput="updateAxisRanges()">
-                        <input type="number" id="xmax-input" class="axis-input" value="10" oninput="updateAxisRanges()">
+                        <input type="number" id="xmin-input" class="axis-input" value="-5" oninput="debouncedAxisUpdate()" aria-label="Mínimo do eixo X">
+                        <input type="number" id="xmax-input" class="axis-input" value="5" oninput="debouncedAxisUpdate()" aria-label="Máximo do eixo X">
                     </div>
                 </div>
                 <div class="axis-item">
                     <span>Y Mín / Máx</span>
                     <div style="display:flex; gap:4px;">
-                        <input type="number" id="ymin-input" class="axis-input" value="-10" oninput="updateAxisRanges()">
-                        <input type="number" id="ymax-input" class="axis-input" value="10" oninput="updateAxisRanges()">
+                        <input type="number" id="ymin-input" class="axis-input" value="-5" oninput="debouncedAxisUpdate()" aria-label="Mínimo do eixo Y">
+                        <input type="number" id="ymax-input" class="axis-input" value="5" oninput="debouncedAxisUpdate()" aria-label="Máximo do eixo Y">
                     </div>
                 </div>
             </div>
@@ -714,14 +599,14 @@
             <div class="setting-row" style="margin-bottom: 10px;">
                 <span class="setting-label">Malha Quadriculada</span>
                 <label class="switch">
-                    <input type="checkbox" id="grid-toggle" checked onchange="toggleGrid(this.checked)">
+                    <input type="checkbox" id="grid-toggle" checked onchange="toggleGrid(this.checked)" aria-label="Alternar Malha Quadriculada">
                     <span class="slider-switch"></span>
                 </label>
             </div>
             <div class="setting-row">
-                <span class="setting-label">Números nos Eixos / Malha</span>
+                <span class="setting-label">Valores dos eixos</span>
                 <label class="switch">
-                    <input type="checkbox" id="numbers-toggle" checked onchange="toggleGridNumbers(this.checked)">
+                    <input type="checkbox" id="axis-values-toggle" checked onchange="toggleAxisValues(this.checked)" aria-label="Alternar Valores dos Eixos">
                     <span class="slider-switch"></span>
                 </label>
             </div>
@@ -730,14 +615,14 @@
         <div class="section" style="border-bottom: none;">
             <div class="section-title">Controle Temporal (t)</div>
             <div class="time-controller">
-                <button class="btn-icon" id="btn-play" onclick="togglePlay()">⏸</button>
-                <input type="range" id="time-slider" min="0" max="20" step="0.05" value="0">
+                <button class="btn-icon" id="btn-play" onclick="togglePlay()" aria-label="Reproduzir ou Pausar tempo">⏸</button>
+                <input type="range" id="time-slider" min="0" max="20" step="0.05" value="0" aria-label="Deslizador de tempo t">
                 <div class="time-display" id="time-display">0.00</div>
             </div>
+            <div class="shortcut-tip">Dica: Aperte <b>Espaço</b> para pausar/retomar</div>
         </div>
     </div>
 
-    <!-- PAINEL DIREITO -->
     <div class="sidebar sidebar-right" id="sidebar-right">
         <div class="header">
             <div class="logo" style="color: var(--text-main);">
@@ -747,18 +632,18 @@
         </div>
 
         <div class="section" id="section-calculus">
-            <div class="section-title">Cálculo Diferencial e Integral (1ª Função)</div>
+            <div class="section-title">Cálculo Analítico (1ª Função)</div>
             
             <div class="setting-row" style="margin-bottom: 8px;">
                 <span class="setting-label">Reta Tangente (Derivada)</span>
                 <label class="switch">
-                    <input type="checkbox" id="tangent-toggle" checked onchange="toggleTangent(this.checked)">
+                    <input type="checkbox" id="tangent-toggle" checked onchange="toggleTangent(this.checked)" aria-label="Alternar exibição da Reta Tangente">
                     <span class="slider-switch"></span>
                 </label>
             </div>
             <div class="time-controller" style="margin-bottom: 12px;">
                 <span style="font-size:0.8rem; font-weight:600; width:24px;">x₀=</span>
-                <input type="range" id="tangent-slider" min="-10" max="10" step="0.1" value="1">
+                <input type="range" id="tangent-slider" min="-5" max="5" step="0.1" value="1" aria-label="Posição X para reta tangente">
                 <div class="time-display" id="tangent-val">1.00</div>
             </div>
             <div class="calc-info" id="derivative-info">Derivada f'(x₀) = 2.00</div>
@@ -766,18 +651,18 @@
             <div class="setting-row" style="margin: 14px 0 8px 0;">
                 <span class="setting-label">Área sob a Curva (Integral)</span>
                 <label class="switch">
-                    <input type="checkbox" id="integral-toggle" checked onchange="toggleIntegral(this.checked)">
+                    <input type="checkbox" id="integral-toggle" checked onchange="toggleIntegral(this.checked)" aria-label="Alternar exibição da Integral">
                     <span class="slider-switch"></span>
                 </label>
             </div>
             <div class="axis-grid" style="margin-bottom: 8px;">
                 <div class="axis-item">
                     <span>Limite a</span>
-                    <input type="number" id="integral-a" class="axis-input" value="-2" oninput="updateGraph()">
+                    <input type="number" id="integral-a" class="axis-input" value="-2" oninput="debouncedGraphUpdate()" aria-label="Limite inferior da integral">
                 </div>
                 <div class="axis-item">
                     <span>Limite b</span>
-                    <input type="number" id="integral-b" class="axis-input" value="2" oninput="updateGraph()">
+                    <input type="number" id="integral-b" class="axis-input" value="2" oninput="debouncedGraphUpdate()" aria-label="Limite superior da integral">
                 </div>
             </div>
             <div class="calc-info" id="integral-info">∫ f(x)dx ≈ 0.00</div>
@@ -785,8 +670,8 @@
 
         <div class="section" style="border-bottom: none;">
             <div class="section-title">Exportação de Resultados</div>
-            <button class="btn-primary" onclick="exportData('png')">Exportar Imagem (PNG 4K)</button>
-            <button class="btn-secondary" onclick="exportData('csv')">Exportar Tabela de Dados (CSV)</button>
+            <button class="btn-primary" onclick="exportData('png')" aria-label="Exportar gráfico como imagem PNG">Exportar Imagem (PNG 4K)</button>
+            <button class="btn-secondary" onclick="exportData('csv')" aria-label="Exportar gráfico como tabela CSV">Exportar Tabela de Dados (CSV)</button>
         </div>
     </div>
 
@@ -846,8 +731,52 @@
             superior: [
                 { val: "a*(x^2 + y^2)", label: "Parabolóide 3D: a*(x^2 + y^2)" },
                 { val: "x^2 - y^2", label: "Superfície em Sela 3D: x^2 - y^2" },
-                { val: "x - y + sin(t)", label: "Campo de Vetores (EDO): dy/dx = x - y + sin(t)" }
+                { val: "x - y + sin(t)", label: "Campo de Vetores (EDO): dy/dx = x - y + sin(t)" },
+                { val: "sin(sqrt(x^2 + y^2) - t)", label: "Onda 3D: sin(√(x²+y²) - t)"}
             ]
+        };
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        window.debouncedGraphUpdate = debounce(() => updateGraph(), 100);
+        window.debouncedAxisUpdate = debounce(() => updateAxisRanges(), 150);
+
+        // Item 1 & 6: Centralização da lógica de visibilidade do painel de cálculo e abas mobile
+        function updateCalculusVisibility() {
+            const hideCalculus = State.mode === '3D' || State.mode === 'ODE' || State.level === 'fundamental';
+            sectionCalculus.style.display = hideCalculus ? 'none' : 'block';
+
+            const calcTabBtn = document.getElementById('mobile-tab-right');
+            if (calcTabBtn) {
+                calcTabBtn.style.display = hideCalculus ? 'none' : 'block';
+            }
+            if (hideCalculus) {
+                switchMobileTab('left');
+            }
+        }
+
+        window.switchMobileTab = function(tab) {
+            const left = document.getElementById('sidebar-left');
+            const right = document.getElementById('sidebar-right');
+            const btns = document.querySelectorAll('.mobile-tab-btn');
+
+            if (tab === 'left') {
+                left.classList.remove('mobile-hidden');
+                right.classList.remove('mobile-active');
+                btns[0].classList.add('active');
+                btns[1].classList.remove('active');
+            } else {
+                left.classList.add('mobile-hidden');
+                right.classList.add('mobile-active');
+                btns[0].classList.remove('active');
+                btns[1].classList.add('active');
+            }
         };
 
         window.openInfoModal = function() { document.getElementById('info-modal').classList.add('active'); };
@@ -856,26 +785,44 @@
         window.updateParam = function(p, val) {
             State.params[p] = parseFloat(val);
             document.getElementById(`val-${p}`).innerText = parseFloat(val).toFixed(1);
-            updateGraph();
+            debouncedGraphUpdate();
         };
 
-        // GESTÃO DE MÚLTIPLAS FUNÇÕES
+        function getFunctionLabel(index) {
+            if (State.mode === '3D') return `z${index + 1} =`;
+            if (State.mode === 'ODE') return 'dy/dx =';
+            const labels = ['f(x) =', 'g(x) =', 'h(x) =', 'p(x) ='];
+            return labels[index] || `f${index + 1}(x) =`;
+        }
+
         function renderFunctionInputs() {
             fnContainer.innerHTML = '';
-            const prefix = State.mode === '3D' ? 'z =' : (State.mode === 'ODE' ? 'dy/dx =' : 'y =');
+            const fnsToRender = (State.mode === 'ODE') ? State.functions.slice(0, 1) : State.functions;
             
-            State.functions.forEach((fn, idx) => {
+            fnsToRender.forEach((fn, index) => {
+                const prefix = getFunctionLabel(index);
                 const div = document.createElement('div');
                 div.className = 'fn-row';
                 div.innerHTML = `
-                    <div class="fn-color-indicator" style="background-color: ${fn.color};"></div>
+                    <input type="color" class="color-picker" value="${fn.color}" data-id="${fn.id}" aria-label="Cor da função">
                     <div class="input-group">
                         <span class="input-label">${prefix}</span>
-                        <input type="text" class="math-input" value="${fn.expr}" data-id="${fn.id}" autocomplete="off" spellcheck="false">
+                        <input type="text" class="math-input" value="${fn.expr}" data-id="${fn.id}" autocomplete="off" spellcheck="false" aria-label="Expressão da função">
                     </div>
-                    ${State.functions.length > 1 ? `<button class="btn-remove-fn" onclick="removeFunctionInput(${fn.id})" title="Remover">✕</button>` : ''}
+                    ${(fnsToRender.length > 1 && State.mode !== 'ODE') ? `<button class="btn-remove-fn" onclick="removeFunctionInput(${fn.id})" title="Remover" aria-label="Remover função">✕</button>` : ''}
                 `;
                 fnContainer.appendChild(div);
+            });
+
+            fnContainer.querySelectorAll('.color-picker').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    const targetFn = State.functions.find(f => f.id === id);
+                    if (targetFn) {
+                        targetFn.color = e.target.value;
+                        updateGraph();
+                    }
+                });
             });
 
             fnContainer.querySelectorAll('.math-input').forEach(input => {
@@ -891,7 +838,8 @@
             });
         }
 
-        window.addFunctionInput = function(expr = 'sin(x)') {
+        window.addFunctionInput = function(expr = State.mode === '3D' ? 'cos(x + y)' : 'cos(x)') {
+            if (State.mode === 'ODE') return;
             const color = COLOR_PALETTE[State.functions.length % COLOR_PALETTE.length];
             State.functions.push({ id: State.nextFnId++, expr: expr, color: color, compiledFn: null });
             renderFunctionInputs();
@@ -907,6 +855,7 @@
             updateGraph();
         };
 
+        // Item 6: Ajuste de Interface Mobile no Nível Fundamental integrado
         window.setPedagogicalLevel = function(level) {
             State.level = level;
             presetSelect.innerHTML = '<option value="">Selecione uma função padrão...</option>';
@@ -919,47 +868,63 @@
             });
 
             if (level === 'fundamental') {
-                sectionCalculus.style.display = 'none';
                 State.functions = [{ id: 1, expr: "a*x", color: COLOR_PALETTE[0], compiledFn: null }];
                 setMode('2D');
             } else if (level === 'medio') {
-                sectionCalculus.style.display = 'block';
                 State.functions = [{ id: 1, expr: "-a*x^2 + b*x", color: COLOR_PALETTE[0], compiledFn: null }];
                 setMode('2D');
             } else if (level === 'superior') {
-                sectionCalculus.style.display = 'block';
                 State.functions = [{ id: 1, expr: "a*(x^2 + y^2)", color: COLOR_PALETTE[0], compiledFn: null }];
                 setMode('3D');
             }
+
+            updateCalculusVisibility();
             renderFunctionInputs();
             compileMath();
             updateGraph();
         };
 
+        // Item 2: Tratamento e validação AST da variável 'y' no modo 2D
         function compileMath() {
             let hasError = false;
+            let customErrorMessage = "Verifique a sintaxe matemática nas áreas em vermelho.";
+
             State.functions.forEach(fn => {
-                const expr = fn.expr.trim();
-                if (!expr) {
-                    fn.compiledFn = null;
-                    return;
-                }
+                const inputEl = document.querySelector(`.math-input[data-id="${fn.id}"]`);
                 try {
+                    const expr = fn.expr.trim();
+                    if (!expr) throw new Error("Expressão vazia");
+
+                    // Validação AST para interceptar 'y' em 2D
+                    if (State.mode === '2D') {
+                        const parsedNode = math.parse(expr);
+                        const hasYVariable = parsedNode.filter(node => node.isSymbolNode && node.name === 'y').length > 0;
+                        if (hasYVariable) {
+                            throw new Error("ERR_VARIABLE_Y_IN_2D");
+                        }
+                    }
+
                     const compiled = math.compile(expr);
-                    compiled.evaluate({ x: 1, y: 1, t: 0, a: 1, b: 1, c: 1 });
+                    const testScope = (State.mode === '2D') 
+                        ? { x: 1, t: 0, a: 1, b: 1, c: 1 }
+                        : { x: 1, y: 1, t: 0, a: 1, b: 1, c: 1 };
+                    
+                    compiled.evaluate(testScope);
                     fn.compiledFn = compiled;
+                    if (inputEl) inputEl.classList.remove('input-error');
                 } catch (err) {
-                    fn.compiledFn = null;
                     hasError = true;
+                    fn.compiledFn = null;
+                    if (inputEl) inputEl.classList.add('input-error');
+
+                    if (err.message === "ERR_VARIABLE_Y_IN_2D") {
+                        customErrorMessage = "A variável 'y' não é permitida no modo 2D. Alterne para o modo 3D ou EDO para utilizar superfícies ou campos vetoriais.";
+                    }
                 }
             });
 
-            if (hasError) {
-                errorEl.innerText = "Sintaxe inválida em uma das expressões.";
-                errorEl.style.display = 'block';
-            } else {
-                errorEl.style.display = 'none';
-            }
+            errorEl.innerText = customErrorMessage;
+            errorEl.style.display = hasError ? 'block' : 'none';
         }
 
         tSlider.addEventListener('input', (e) => { 
@@ -979,50 +944,69 @@
         window.loadPreset = function(key) {
             if(!key) return;
             State.functions[0].expr = key;
-            if(key.includes('y') && State.mode !== '3D' && State.mode !== 'ODE') {
-                setMode('3D');
+            const isODE = key === "x - y + sin(t)" || key.includes('dy/dx');
+            
+            if (isODE) {
+                setMode('ODE');
+            } else if (key.includes('y')) {
+                if (State.mode !== '3D') setMode('3D');
+            } else if (State.mode === '3D' || State.mode === 'ODE') {
+                setMode('2D');
             }
+            
             renderFunctionInputs();
             compileMath();
             updateGraph();
         };
 
+        // Item 3: Atualização síncrona imediata ao alternar o Modo Escuro
         window.toggleDarkMode = function() {
             State.isDarkMode = !State.isDarkMode;
             document.body.classList.toggle('dark-mode', State.isDarkMode);
             document.getElementById('dark-btn-text').innerText = State.isDarkMode ? 'Light Mode' : 'Dark Mode';
             
             const bg = State.isDarkMode ? '#090D16' : '#F8FAFC';
-            const gridColor = State.isDarkMode ? '#1E293B' : '#E2E8F0';
-            const textColor = State.isDarkMode ? '#94A3B8' : '#475569';
-            const zeroline = State.isDarkMode ? '#475569' : '#64748B';
+            const gridColor = State.isDarkMode ? '#334155' : '#CBD5E1';
+            const textColor = State.isDarkMode ? '#F8FAFC' : '#0F172A';
+            const zeroline = State.isDarkMode ? '#F8FAFC' : '#0F172A';
 
             Plotly.relayout('plot-2d', {
-                paper_bgcolor: bg, plot_bgcolor: bg,
-                'xaxis.gridcolor': gridColor, 'yaxis.gridcolor': gridColor,
-                'xaxis.zerolinecolor': zeroline, 'yaxis.zerolinecolor': zeroline,
-                'xaxis.tickfont.color': textColor, 'yaxis.tickfont.color': textColor
+                paper_bgcolor: bg, 
+                plot_bgcolor: bg,
+                'xaxis.gridcolor': gridColor, 
+                'yaxis.gridcolor': gridColor,
+                'xaxis.zerolinecolor': zeroline, 
+                'yaxis.zerolinecolor': zeroline,
+                'xaxis.tickcolor': zeroline,
+                'yaxis.tickcolor': zeroline,
+                'xaxis.tickfont.color': textColor, 
+                'yaxis.tickfont.color': textColor
             });
 
-            scene.background.set(State.isDarkMode ? 0x090D16 : 0xF8FAFC);
+            if (typeof scene !== 'undefined' && scene.background) {
+                scene.background.set(State.isDarkMode ? 0x090D16 : 0xF8FAFC);
+            }
+
+            // Força a re-renderização síncrona dos vetores e elementos gráficos
+            updateGraph(false);
         };
 
         window.togglePresentationMode = function() {
             sidebarLeft.classList.toggle('hidden');
             sidebarRight.classList.toggle('hidden');
+            document.body.classList.toggle('presentation-mode');
             const hidden = sidebarLeft.classList.contains('hidden');
             document.getElementById('pres-btn-text').innerText = hidden ? 'Sair Apresentação' : 'Apresentação';
             setTimeout(() => onWindowResize(), 300);
         };
 
-        // BOTÕES DE MALHA QUADRICULADA E NÚMEROS NOS EIXOS (ESTILO GEOGEBRA)
         window.toggleGrid = function(show) {
             State.showGrid = show;
             Plotly.relayout('plot-2d', { 'xaxis.showgrid': show, 'yaxis.showgrid': show });
-            grid.visible = show;
+            if (typeof grid !== 'undefined') grid.visible = show;
         };
 
-        window.toggleGridNumbers = function(show) {
+        window.toggleAxisValues = function(show) {
             State.showNumbers = show;
             Plotly.relayout('plot-2d', {
                 'xaxis.showticklabels': show,
@@ -1030,48 +1014,115 @@
             });
         };
 
-        // --- MOTOR PLOTLY 2D ---
+        window.addEventListener('keydown', (e) => {
+            const interactiveTags = ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'];
+            if (interactiveTags.includes(e.target.tagName)) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'KeyR') {
+                e.preventDefault();
+                if (State.mode === '3D') {
+                    controls.reset();
+                    camera.position.set(15, 15, 15);
+                } else {
+                    updateAxisRanges();
+                }
+            }
+        });
+
         const layout2D = {
-            margin: { t: 0, r: 0, b: 0, l: 0 },
+            margin: { t: 25, r: 25, b: 35, l: 45 },
             paper_bgcolor: '#F8FAFC',
             plot_bgcolor: '#F8FAFC',
-            xaxis: { zeroline: true, zerolinecolor: '#64748B', zerolinewidth: 2, gridcolor: '#E2E8F0', range: [-10, 10], showgrid: true, showticklabels: true },
-            yaxis: { zeroline: true, zerolinecolor: '#64748B', zerolinewidth: 2, gridcolor: '#E2E8F0', range: [-10, 10], showgrid: true, showticklabels: true },
-            hovermode: 'closest',
-            dragmode: 'zoom',
-            shapes: []
+            xaxis: { 
+                zeroline: true, zerolinecolor: '#0F172A', zerolinewidth: 2, 
+                gridcolor: '#CBD5E1', gridwidth: 1.5,
+                range: [-5, 5], nticks: 10, showgrid: true, showticklabels: true,
+                ticks: 'inside', ticklen: 4, tickwidth: 1.5, tickcolor: '#0F172A',
+                tickfont: { family: 'Plus Jakarta Sans, sans-serif', size: 11, color: '#0F172A' },
+                layer: 'below traces'
+            },
+            yaxis: { 
+                zeroline: true, zerolinecolor: '#0F172A', zerolinewidth: 2, 
+                gridcolor: '#CBD5E1', gridwidth: 1.5,
+                range: [-5, 5], nticks: 10, showgrid: true, showticklabels: true,
+                ticks: 'inside', ticklen: 4, tickwidth: 1.5, tickcolor: '#0F172A',
+                tickfont: { family: 'Plus Jakarta Sans, sans-serif', size: 11, color: '#0F172A' },
+                layer: 'below traces'
+            },
+            hovermode: 'closest', dragmode: 'zoom', shapes: []
         };
 
         Plotly.newPlot('plot-2d', [], layout2D, { responsive: true, displayModeBar: false, scrollZoom: true });
 
+        // Item 4: Desacoplamento do Feedback Loop na digitação dos eixos
         document.getElementById('plot-2d').on('plotly_relayout', function(eventData) {
+            let x0, x1, y0, y1;
             if (eventData['xaxis.range[0]'] !== undefined) {
-                xminInput.value = eventData['xaxis.range[0]'].toFixed(2);
-                xmaxInput.value = eventData['xaxis.range[1]'].toFixed(2);
-                yminInput.value = eventData['yaxis.range[0]'].toFixed(2);
-                ymaxInput.value = eventData['yaxis.range[1]'].toFixed(2);
-                updateGraph();
+                x0 = eventData['xaxis.range[0]'];
+                x1 = eventData['xaxis.range[1]'];
+            } else if (eventData['xaxis.range']) {
+                x0 = eventData['xaxis.range'][0];
+                x1 = eventData['xaxis.range'][1];
+            }
+            if (eventData['yaxis.range[0]'] !== undefined) {
+                y0 = eventData['yaxis.range[0]'];
+                y1 = eventData['yaxis.range[1]'];
+            } else if (eventData['yaxis.range']) {
+                y0 = eventData['yaxis.range'][0];
+                y1 = eventData['yaxis.range'][1];
+            }
+
+            // Bloqueia a sobrescrita caso o usuário esteja focando em um dos inputs
+            const activeEl = document.activeElement;
+            const isEditingAxis = activeEl === xminInput || activeEl === xmaxInput || 
+                                  activeEl === yminInput || activeEl === ymaxInput;
+
+            let updated = false;
+            if (x0 !== undefined && x1 !== undefined) {
+                layout2D.xaxis.range = [x0, x1];
+                if (!isEditingAxis) {
+                    xminInput.value = Number(x0).toFixed(2);
+                    xmaxInput.value = Number(x1).toFixed(2);
+                }
+                updated = true;
+            }
+            if (y0 !== undefined && y1 !== undefined) {
+                layout2D.yaxis.range = [y0, y1];
+                if (!isEditingAxis) {
+                    yminInput.value = Number(y0).toFixed(2);
+                    ymaxInput.value = Number(y1).toFixed(2);
+                }
+                updated = true;
+            }
+
+            if (updated) {
+                debouncedGraphUpdate();
             }
         });
 
         window.updateAxisRanges = function() {
-            const xmin = parseFloat(xminInput.value) || -10;
-            const xmax = parseFloat(xmaxInput.value) || 10;
-            const ymin = parseFloat(yminInput.value) || -10;
-            const ymax = parseFloat(ymaxInput.value) || 10;
+            const xmin = parseFloat(xminInput.value) || -5;
+            const xmax = parseFloat(xmaxInput.value) || 5;
+            const ymin = parseFloat(yminInput.value) || -5;
+            const ymax = parseFloat(ymaxInput.value) || 5;
+            layout2D.xaxis.range = [xmin, xmax];
+            layout2D.yaxis.range = [ymin, ymax];
             Plotly.relayout('plot-2d', { 'xaxis.range': [xmin, xmax], 'yaxis.range': [ymin, ymax] });
         };
 
-        function update2D() {
-            const xmin = parseFloat(xminInput.value) || -10;
-            const xmax = parseFloat(xmaxInput.value) || 10;
+        function update2D(isAnimation = false) {
+            const xmin = layout2D.xaxis.range ? layout2D.xaxis.range[0] : (parseFloat(xminInput.value) || -5);
+            const xmax = layout2D.xaxis.range ? layout2D.xaxis.range[1] : (parseFloat(xmaxInput.value) || 5);
             const numPoints = 800;
             const step = (xmax - xmin) / numPoints;
             const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
+            const jumpThreshold = Math.abs(xmax - xmin) * 5; 
 
             const traces = [];
 
-            // Plotar todas as funções ativas
             State.functions.forEach((fnObj) => {
                 if (!fnObj.compiledFn) return;
                 const xVals = [], yVals = [];
@@ -1080,7 +1131,16 @@
                     scope.x = x;
                     try {
                         let y = fnObj.compiledFn.evaluate(scope);
-                        if (typeof y !== 'number' || isNaN(y) || !isFinite(y)) y = null;
+                        
+                        if (typeof y !== 'number' || isNaN(y) || !isFinite(y)) {
+                            y = null;
+                        } else if (yVals.length > 0) {
+                            let prevY = yVals[yVals.length - 1];
+                            if (prevY !== null && y !== null && Math.abs(y - prevY) > jumpThreshold) {
+                                yVals.push(null);
+                                xVals.push(x - step/2); 
+                            }
+                        }
                         xVals.push(x); yVals.push(y);
                     } catch (e) {
                         xVals.push(x); yVals.push(null);
@@ -1092,11 +1152,10 @@
                 });
             });
 
-            // Cálculo Diferencial/Integral aplicado à primeira função
             const primaryFn = State.functions[0] ? State.functions[0].compiledFn : null;
             
             let intX = [], intY = [], integralVal = 0;
-            if (State.showIntegral && State.level !== 'fundamental' && primaryFn) {
+            if (State.showIntegral && State.level !== 'fundamental' && State.mode !== 'ODE' && primaryFn) {
                 const a = parseFloat(document.getElementById('integral-a').value) || -2;
                 const b = parseFloat(document.getElementById('integral-b').value) || 2;
                 const n = 100;
@@ -1117,7 +1176,7 @@
                 }
                 integralVal *= h;
                 intX.push(b); intY.push(0);
-                integralInfo.innerText = `∫ f₁(x)dx ≈ ${integralVal.toFixed(4)}`;
+                integralInfo.innerText = `∫ f(x)dx ≈ ${integralVal.toFixed(4)}`;
                 
                 traces.push({
                     x: intX, y: intY, type: 'scatter', mode: 'tozeroy', fill: 'tozeroy',
@@ -1128,7 +1187,7 @@
             }
 
             let tanX = [], tanY = [], ptX = [], ptY = [];
-            if (State.showTangent && State.level !== 'fundamental' && primaryFn) {
+            if (State.showTangent && State.level !== 'fundamental' && State.mode !== 'ODE' && primaryFn) {
                 const x0 = parseFloat(tangentSlider.value);
                 scope.x = x0;
                 let y0 = 0, yPlus = 0, yMinus = 0;
@@ -1144,7 +1203,7 @@
                 let deriv = (yPlus - yMinus) / 0.0002;
                 if (isNaN(deriv) || !isFinite(deriv)) deriv = 0;
 
-                derivativeInfo.innerText = `Derivada f₁'(${x0.toFixed(2)}) = ${deriv.toFixed(4)}`;
+                derivativeInfo.innerText = `Derivada f'(${x0.toFixed(2)}) = ${deriv.toFixed(4)}`;
                 
                 let tanLen = (xmax - xmin) * 0.15;
                 tanX = [x0 - tanLen, x0 + tanLen];
@@ -1157,26 +1216,44 @@
                 derivativeInfo.innerText = `Derivada f'(x₀) = 0.00`;
             }
 
-            Plotly.react('plot-2d', traces, layout2D);
+            const currentGraph = document.getElementById('plot-2d');
+            if (isAnimation && currentGraph.data && currentGraph.data.length === traces.length) {
+                const updateX = traces.map(t => t.x);
+                const updateY = traces.map(t => t.y);
+                Plotly.restyle('plot-2d', {x: updateX, y: updateY});
+            } else {
+                Plotly.react('plot-2d', traces, layout2D);
+            }
         }
 
-        function updateODE() {
+        function updateODE(isAnimation = false) {
             const fnObj = State.functions[0];
-            if (!fnObj || !fnObj.compiledFn) return;
-            const xmin = -10, xmax = 10, ymin = -10, ymax = 10;
-            const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
+            if (!fnObj || !fnObj.compiledFn) {
+                Plotly.react('plot-2d', [], Object.assign({}, layout2D, { shapes: [] }));
+                return;
+            }
+            if (isAnimation && !fnObj.expr.includes('t')) return;
+
+            const xmin = layout2D.xaxis.range ? layout2D.xaxis.range[0] : -5;
+            const xmax = layout2D.xaxis.range ? layout2D.xaxis.range[1] : 5;
+            const ymin = layout2D.yaxis.range ? layout2D.yaxis.range[0] : -5;
+            const ymax = layout2D.yaxis.range ? layout2D.yaxis.range[1] : 5;
             
+            const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
             const shapes = [];
             const lineColor = State.isDarkMode ? '#38BDF8' : '#0284C7';
+            const evalFn = fnObj.compiledFn.evaluate;
+            const stepX = (xmax - xmin) / 10;
+            const stepY = (ymax - ymin) / 10;
             
-            for (let x = xmin; x <= xmax; x += 1.2) {
-                for (let y = ymin; y <= ymax; y += 1.2) {
+            for (let x = xmin; x <= xmax; x += stepX) {
+                for (let y = ymin; y <= ymax; y += stepY) {
                     scope.x = x; scope.y = y;
                     try {
-                        let slope = fnObj.compiledFn.evaluate(scope);
+                        let slope = evalFn(scope);
                         if (typeof slope === 'number' && !isNaN(slope) && isFinite(slope)) {
                             let angle = Math.atan(slope);
-                            let len = 0.3;
+                            let len = Math.min(stepX, stepY) * 0.25;
                             let dx = len * Math.cos(angle);
                             let dy = len * Math.sin(angle);
                             
@@ -1216,51 +1293,116 @@
         grid.position.y = -0.01;
         scene.add(grid);
 
-        const geometry = new THREE.PlaneGeometry(20, 20, 80, 80);
-        geometry.rotateX(-Math.PI / 2);
-        
-        const material = new THREE.MeshStandardMaterial({
-            color: 0x38BDF8, wireframe: false, side: THREE.DoubleSide,
-            transparent: true, opacity: 0.9, roughness: 0.2
-        });
-        
-        const surface = new THREE.Mesh(geometry, material);
-        scene.add(surface);
+        const surfaceGroup = new THREE.Group();
+        scene.add(surfaceGroup);
+        const surfacesMap = new Map();
 
-        function update3D() {
-            const fnObj = State.functions[0];
-            if (!fnObj || !fnObj.compiledFn) return;
-            const positions = geometry.attributes.position;
-            const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
-            for (let i = 0; i < positions.count; i++) {
-                let x = positions.getX(i);
-                let z = positions.getZ(i);
-                scope.x = x; scope.y = z;
-                try {
-                    let yCalc = fnObj.compiledFn.evaluate(scope);
-                    if (typeof yCalc !== 'number' || isNaN(yCalc)) yCalc = 0;
-                    positions.setY(i, Math.max(-15, Math.min(15, yCalc)));
-                } catch (e) { positions.setY(i, 0); }
-            }
-            positions.needsUpdate = true;
-            geometry.computeVertexNormals();
+        function update3D(isAnimation = false) {
+            const activeIds = new Set(State.functions.map(f => f.id));
+
+            surfacesMap.forEach((entry, id) => {
+                if (!activeIds.has(id)) {
+                    surfaceGroup.remove(entry.mesh);
+                    entry.geometry.dispose();
+                    entry.material.dispose();
+                    surfacesMap.delete(id);
+                }
+            });
+
+            State.functions.forEach((fnObj) => {
+                let entry = surfacesMap.get(fnObj.id);
+
+                if (!entry) {
+                    const geom = new THREE.PlaneGeometry(20, 20, 45, 45);
+                    geom.rotateX(-Math.PI / 2);
+                    
+                    const mat = new THREE.MeshStandardMaterial({
+                        color: fnObj.color,
+                        wireframe: false,
+                        side: THREE.DoubleSide,
+                        transparent: true,
+                        opacity: 0.75,
+                        roughness: 0.2
+                    });
+
+                    const mesh = new THREE.Mesh(geom, mat);
+                    surfaceGroup.add(mesh);
+
+                    entry = { mesh, geometry: geom, material: mat };
+                    surfacesMap.set(fnObj.id, entry);
+                } else {
+                    entry.material.color.set(fnObj.color);
+                }
+
+                const positions = entry.geometry.attributes.position;
+
+                if (!fnObj.compiledFn) {
+                    const posArr = positions.array;
+                    for (let i = 1; i < posArr.length; i += 3) {
+                        posArr[i] = 0;
+                    }
+                    positions.needsUpdate = true;
+                    return;
+                }
+
+                if (isAnimation && fnObj.expr && !fnObj.expr.includes('t')) return;
+
+                const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c, x: 0, y: 0 };
+                const compiledFn = fnObj.compiledFn;
+                const posArr = positions.array;
+                let changed = false;
+
+                for (let i = 0; i < posArr.length; i += 3) {
+                    scope.x = posArr[i];
+                    scope.y = posArr[i + 2];
+                    let yCalc = 0;
+
+                    try {
+                        let val = compiledFn.evaluate(scope);
+                        if (typeof val === 'number' && !isNaN(val) && isFinite(val)) {
+                            yCalc = val > 15 ? 15 : (val < -15 ? -15 : val);
+                        }
+                    } catch (e) {
+                        yCalc = 0;
+                    }
+                    
+                    if (posArr[i + 1] !== yCalc) {
+                        posArr[i + 1] = yCalc;
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    positions.needsUpdate = true;
+                    entry.geometry.computeVertexNormals();
+                }
+            });
         }
 
-        function updateGraph() {
-            if (State.mode === '2D') update2D();
-            else if (State.mode === 'ODE') updateODE();
-            else if (State.mode === '3D') update3D();
+        function updateGraph(isAnimation = false) {
+            if (State.mode === '2D') update2D(isAnimation);
+            else if (State.mode === 'ODE') updateODE(isAnimation);
+            else if (State.mode === '3D') update3D(isAnimation);
         }
 
-        function renderFrame() {
+        let lastTime = performance.now();
+        function renderFrame(time) {
+            const dt = (time - lastTime) / 1000;
+            lastTime = time;
+
             if (State.isPlaying) {
-                State.t += 0.03;
+                const safeDt = dt > 0.1 ? 0.016 : dt; 
+                State.t += 2.0 * safeDt;
+                
                 if (State.t > parseFloat(tSlider.max)) State.t = 0;
                 tSlider.value = State.t;
                 tDisplay.innerText = State.t.toFixed(2);
-                updateGraph();
+                updateGraph(true);
             }
-            if (State.mode === '3D') { controls.update(); renderer.render(scene, camera); }
+            if (State.mode === '3D') { 
+                controls.update(); 
+                renderer.render(scene, camera); 
+            }
             requestAnimationFrame(renderFrame);
         }
 
@@ -1269,12 +1411,30 @@
             btnPlay.innerText = State.isPlaying ? '⏸' : '▶';
         };
 
+        // Item 1 e Item 5: Abstração de visibilidade e purga do array no modo EDO
         window.setMode = function(mode) {
             State.mode = mode;
-            document.body.className = `mode-${mode.toLowerCase()}` + (State.isDarkMode ? ' dark-mode' : '');
+            document.body.className = `mode-${mode.toLowerCase()}` + 
+                (State.isDarkMode ? ' dark-mode' : '') + 
+                (document.body.classList.contains('presentation-mode') ? ' presentation-mode' : '');
             
             document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`btn-mode-${mode.toLowerCase()}`).classList.add('active');
+
+            const addBtn = document.getElementById('btn-add-fn');
+            if (mode === 'ODE') {
+                if (addBtn) addBtn.style.display = 'none';
+                
+                // Purga e isola o estado para conter estritamente a primeira função (Item 5)
+                if (State.functions.length > 1) {
+                    State.functions = [State.functions[0]];
+                }
+            } else {
+                if (addBtn) addBtn.style.display = 'block';
+            }
+
+            // Centralização de visibilidade do cálculo (Item 1)
+            updateCalculusVisibility();
 
             if (mode !== 'ODE') {
                 layout2D.shapes = [];
@@ -1288,40 +1448,90 @@
             }
             renderFunctionInputs();
             compileMath();
-            updateGraph();
+            updateGraph(false);
             onWindowResize();
         };
 
-        // EXPORTAÇÃO CSV E IMAGEM
         window.exportData = function(format) {
             if (format === 'csv') {
-                let csvContent = "data:text/csv;charset=utf-8,X,Y,Z\n";
-                const fnObj = State.functions[0];
                 const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
-                
-                for (let x = -10; x <= 10; x += 0.5) {
-                    if (State.mode === '3D') {
+                let csvLines = [];
+
+                if (State.mode === '2D') {
+                    const activeFns = State.functions.filter(f => f.compiledFn);
+                    if (activeFns.length === 0) return;
+
+                    const headers = ['X', ...activeFns.map((f, i) => `Y_f${i + 1}_(${f.expr.replace(/,/g, '')})`)];
+                    csvLines.push(headers.join(','));
+
+                    const xmin = layout2D.xaxis.range ? layout2D.xaxis.range[0] : -5;
+                    const xmax = layout2D.xaxis.range ? layout2D.xaxis.range[1] : 5;
+                    const step = (xmax - xmin) / 100;
+
+                    for (let x = xmin; x <= xmax + step / 2; x += step) {
+                        scope.x = x;
+                        const row = [x.toFixed(4)];
+                        activeFns.forEach(fnObj => {
+                            let val = '';
+                            try {
+                                const res = fnObj.compiledFn.evaluate(scope);
+                                val = (typeof res === 'number' && !isNaN(res) && isFinite(res)) ? res.toFixed(4) : '';
+                            } catch(e) { val = ''; }
+                            row.push(val);
+                        });
+                        csvLines.push(row.join(','));
+                    }
+                } else if (State.mode === '3D') {
+                    const activeFns = State.functions.filter(f => f.compiledFn);
+                    if (activeFns.length === 0) return;
+
+                    const headers = ['X', 'Y', ...activeFns.map((f, i) => `Z_f${i + 1}_(${f.expr.replace(/,/g, '')})`)];
+                    csvLines.push(headers.join(','));
+
+                    for (let x = -10; x <= 10; x += 0.5) {
                         for (let y = -10; y <= 10; y += 0.5) {
                             scope.x = x; scope.y = y;
-                            let z = 0;
-                            try { z = fnObj && fnObj.compiledFn ? fnObj.compiledFn.evaluate(scope) : 0; } catch(e) {}
-                            csvContent += `${x},${y},${z}\n`;
+                            const row = [x.toFixed(2), y.toFixed(2)];
+                            activeFns.forEach(fnObj => {
+                                let val = '';
+                                try {
+                                    const res = fnObj.compiledFn.evaluate(scope);
+                                    val = (typeof res === 'number' && !isNaN(res) && isFinite(res)) ? res.toFixed(4) : '';
+                                } catch(e) { val = ''; }
+                                row.push(val);
+                            });
+                            csvLines.push(row.join(','));
                         }
-                    } else {
-                        scope.x = x;
-                        let y = 0;
-                        try { y = fnObj && fnObj.compiledFn ? fnObj.compiledFn.evaluate(scope) : 0; } catch(e) {}
-                        csvContent += `${x},${y},0\n`;
+                    }
+                } else if (State.mode === 'ODE') {
+                    const fnObj = State.functions[0];
+                    csvLines.push('X,Y,dY_dX');
+                    if (fnObj && fnObj.compiledFn) {
+                        for (let x = -5; x <= 5; x += 0.5) {
+                            for (let y = -5; y <= 5; y += 0.5) {
+                                scope.x = x; scope.y = y;
+                                let slope = '';
+                                try {
+                                    const res = fnObj.compiledFn.evaluate(scope);
+                                    slope = (typeof res === 'number' && !isNaN(res) && isFinite(res)) ? res.toFixed(4) : '';
+                                } catch(e) {}
+                                csvLines.push(`${x.toFixed(2)},${y.toFixed(2)},${slope}`);
+                            }
+                        }
                     }
                 }
-                const encodedUri = encodeURI(csvContent);
+
+                const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
+                link.setAttribute("href", url);
                 link.setAttribute("download", `rittner_export_${State.mode}.csv`);
                 document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
             } else {
-                if(State.mode === '3D') {
+                if (State.mode === '3D') {
                     renderer.render(scene, camera);
                     const link = document.createElement('a');
                     link.download = 'Rittner_3D.png';
@@ -1347,7 +1557,7 @@
         setPedagogicalLevel('medio');
         renderFunctionInputs();
         compileMath();
-        renderFrame();
+        requestAnimationFrame(renderFrame);
     </script>
 </body>
 </html>
