@@ -8,8 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/jpeg" href="https://i.imgur.com/X8Mdy4K.jpeg">
-
+    <link rel="icon" type="image/jpeg" href="https://i.imgur.com/WNY22PJ.jpeg">
 
     <meta name="description" content="Visualizador interativo de funções matemáticas em 2D, 3D e EDO. Calcule derivadas, integrais e explore conceitos com animações e parâmetros em tempo real.">
 
@@ -39,6 +38,7 @@
             --border-hover: #CBD5E1;
             --danger: #EF4444;
             --success: #10B981;
+            --warning: #F59E0B;
             
             --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
             --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
@@ -227,6 +227,13 @@
             position: relative;
         }
 
+        .fn-visible-chk {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
         .color-picker {
             -webkit-appearance: none;
             -moz-appearance: none;
@@ -362,17 +369,23 @@
             color: var(--text-main);
         }
 
-        .setting-row { display: flex; align-items: center; justify-content: space-between; }
-        .setting-label { font-size: 0.85rem; font-weight: 500; color: var(--text-main); }
+        .setting-row { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            margin-bottom: 8px;
+        }
+        .setting-row:last-child { margin-bottom: 0; }
+        .setting-label { font-size: 0.83rem; font-weight: 500; color: var(--text-main); }
 
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch { position: relative; display: inline-block; width: 42px; height: 22px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider-switch {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: var(--border-hover); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 24px;
+            background-color: var(--border-hover); transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 22px;
         }
         .slider-switch:before {
-            position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
             background-color: white; transition: .3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%;
         }
         input:checked + .slider-switch { background-color: var(--primary); }
@@ -524,7 +537,7 @@
     <div class="sidebar sidebar-left" id="sidebar-left">
         <div class="header">
             <div class="logo">
-                <img src="https://i.imgur.com/X8Mdy4K.jpeg" alt="Logo" width="30" height="30">
+                <img src="https://i.imgur.com/WNY22PJ.jpeg" alt="Logo" width="30" height="30">
                 Funções de Rittner
             </div>
             <div class="toggle-group">
@@ -555,7 +568,7 @@
             <div id="functions-container"></div>
             <button class="btn-secondary" id="btn-add-fn" style="margin-top: 8px;" onclick="addFunctionInput()" aria-label="Adicionar Nova Função">+ Adicionar Função</button>
             <div class="error-msg" id="fn-error">Verifique a sintaxe matemática nas áreas em vermelho.</div>
-            <p class="helper-text">Variáveis: <b>x</b>, tempo <b>t</b>, parâmetros <b>a, b, c</b>.</p>
+            <p class="helper-text" id="variable-helper-text">Variáveis: <b>x</b>, tempo <b>t</b>, parâmetros <b>a, b, c</b>.</p>
         </div>
 
         <div class="section">
@@ -563,15 +576,15 @@
             <div class="param-slider-group">
                 <div class="param-row">
                     <span>a = <b id="val-a">1.0</b></span>
-                    <input type="range" id="slider-a" min="-5" max="5" step="0.1" value="1" oninput="updateParam('a', this.value)" aria-label="Alterar parâmetro a">
+                    <input type="range" class="param-slider" id="slider-a" min="-5" max="5" step="0.1" value="1" oninput="updateParam('a', this.value)" aria-label="Alterar parâmetro a">
                 </div>
                 <div class="param-row">
                     <span>b = <b id="val-b">4.0</b></span>
-                    <input type="range" id="slider-b" min="-5" max="5" step="0.1" value="4" oninput="updateParam('b', this.value)" aria-label="Alterar parâmetro b">
+                    <input type="range" class="param-slider" id="slider-b" min="-5" max="5" step="0.1" value="4" oninput="updateParam('b', this.value)" aria-label="Alterar parâmetro b">
                 </div>
                 <div class="param-row">
                     <span>c = <b id="val-c">0.0</b></span>
-                    <input type="range" id="slider-c" min="-5" max="5" step="0.1" value="0" oninput="updateParam('c', this.value)" aria-label="Alterar parâmetro c">
+                    <input type="range" class="param-slider" id="slider-c" min="-5" max="5" step="0.1" value="0" oninput="updateParam('c', this.value)" aria-label="Alterar parâmetro c">
                 </div>
             </div>
         </div>
@@ -597,18 +610,57 @@
         </div>
 
         <div class="section">
-            <div class="section-title">Visualização & Malha GeoGebra</div>
-            <div class="setting-row" style="margin-bottom: 10px;">
+            <div class="section-title">Camadas Visíveis</div>
+            
+            <div id="layers-2d-group">
+                <div class="setting-row">
+                    <span class="setting-label">Raízes / Zeros (f(x) = 0)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="roots-toggle" checked onchange="toggleRoots(this.checked)" aria-label="Alternar Exibição de Raízes">
+                        <span class="slider-switch"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Vértices e Pontos Críticos</span>
+                    <label class="switch">
+                        <input type="checkbox" id="critical-toggle" checked onchange="toggleCritical(this.checked)" aria-label="Alternar Exibição de Pontos Críticos">
+                        <span class="slider-switch"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Valores dos Eixos</span>
+                    <label class="switch">
+                        <input type="checkbox" id="axis-values-toggle" checked onchange="toggleAxisValues(this.checked)" aria-label="Alternar Valores dos Eixos">
+                        <span class="slider-switch"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="layers-3d-group" style="display: none;">
+                <div class="setting-row">
+                    <span class="setting-label">Modo Wireframe (Malha)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="wireframe-toggle" onchange="toggleWireframe(this.checked)" aria-label="Alternar modo wireframe no 3D">
+                        <span class="slider-switch"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <span class="setting-label">Transparência da Superfície</span>
+                    <label class="switch">
+                        <input type="checkbox" id="transparency-toggle" checked onchange="toggleTransparency(this.checked)" aria-label="Alternar transparência da superfície 3D">
+                        <span class="slider-switch"></span>
+                    </label>
+                </div>
+                <div class="param-row" style="margin-top: 8px;">
+                    <span style="font-size:0.8rem; font-weight:500;">Opacidade: <b id="val-opacity">75%</b></span>
+                    <input type="range" class="param-slider" id="opacity-slider" min="0.1" max="1" step="0.05" value="0.75" oninput="updateOpacity(this.value)" aria-label="Alterar opacidade no 3D">
+                </div>
+            </div>
+
+            <div class="setting-row" style="margin-top: 8px;">
                 <span class="setting-label">Malha Quadriculada</span>
                 <label class="switch">
                     <input type="checkbox" id="grid-toggle" checked onchange="toggleGrid(this.checked)" aria-label="Alternar Malha Quadriculada">
-                    <span class="slider-switch"></span>
-                </label>
-            </div>
-            <div class="setting-row">
-                <span class="setting-label">Valores dos eixos</span>
-                <label class="switch">
-                    <input type="checkbox" id="axis-values-toggle" checked onchange="toggleAxisValues(this.checked)" aria-label="Alternar Valores dos Eixos">
                     <span class="slider-switch"></span>
                 </label>
             </div>
@@ -618,10 +670,10 @@
             <div class="section-title">Controle Temporal (t)</div>
             <div class="time-controller">
                 <button class="btn-icon" id="btn-play" onclick="togglePlay()" aria-label="Reproduzir ou Pausar tempo">⏸</button>
-                <input type="range" id="time-slider" min="0" max="20" step="0.05" value="0" aria-label="Deslizador de tempo t">
+                <input type="range" class="param-slider" id="time-slider" min="0" max="20" step="0.05" value="0" aria-label="Deslizador de tempo t">
                 <div class="time-display" id="time-display">0.00</div>
             </div>
-            <div class="shortcut-tip">Dica: Aperte <b>Espaço</b> para pausar/retomar</div>
+            <div class="shortcut-tip">Dica: Aperte <b>Espaço</b> para pausar/retomar • <b>R</b> para resetar visão</div>
         </div>
     </div>
 
@@ -629,12 +681,12 @@
         <div class="header">
             <div class="logo" style="color: var(--text-main);">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                Cálculo & Exportação
+                Análise & Exportação
             </div>
         </div>
 
         <div class="section" id="section-calculus">
-            <div class="section-title">Cálculo Analítico (1ª Função)</div>
+            <div class="section-title">Cálculo Analítico (1ª Função Visível)</div>
             
             <div class="setting-row" style="margin-bottom: 8px;">
                 <span class="setting-label">Reta Tangente (Derivada)</span>
@@ -645,7 +697,7 @@
             </div>
             <div class="time-controller" style="margin-bottom: 12px;">
                 <span style="font-size:0.8rem; font-weight:600; width:24px;">x₀=</span>
-                <input type="range" id="tangent-slider" min="-5" max="5" step="0.1" value="1" aria-label="Posição X para reta tangente">
+                <input type="range" class="param-slider" id="tangent-slider" min="-5" max="5" step="0.1" value="1" aria-label="Posição X para reta tangente">
                 <div class="time-display" id="tangent-val">1.00</div>
             </div>
             <div class="calc-info" id="derivative-info">Derivada f'(x₀) = 2.00</div>
@@ -670,6 +722,12 @@
             <div class="calc-info" id="integral-info">∫ f(x)dx ≈ 0.00</div>
         </div>
 
+        <div class="section" id="section-3d-calculus" style="display: none;">
+            <div class="section-title">Derivadas Parciais e Gradiente (3D)</div>
+            <div class="calc-info" id="partial-info-x">∂z/∂x ≈ Indefinido</div>
+            <div class="calc-info" id="partial-info-y" style="margin-top:6px;">∂z/∂y ≈ Indefinido</div>
+        </div>
+
         <div class="section" style="border-bottom: none;">
             <div class="section-title">Exportação de Resultados</div>
             <button class="btn-primary" onclick="exportData('png')" aria-label="Exportar gráfico como imagem PNG">Exportar Imagem (PNG 4K)</button>
@@ -683,13 +741,16 @@
 
         const COLOR_PALETTE = ['#0284C7', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'];
 
+        function generateUniqueId() {
+            return 'fn_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        }
+
         const State = {
             level: 'medio',
             mode: '2D', // '2D', '3D', 'ODE'
             functions: [
-                { id: 1, expr: '-a*x^2 + b*x', color: '#0284C7', compiledFn: null }
+                { id: generateUniqueId(), expr: '-a*x^2 + b*x', color: '#0284C7', compiledFn: null, visible: true }
             ],
-            nextFnId: 2,
             t: 0,
             params: { a: 1.0, b: 4.0, c: 0.0 },
             isPlaying: true,
@@ -697,7 +758,22 @@
             showNumbers: true,
             showTangent: true,
             showIntegral: true,
-            isDarkMode: false
+            showRoots: true,
+            showCritical: true,
+            showWireframe: false,
+            surfaceOpacity: 0.75,
+            isDarkMode: false,
+            isInteracting: false,
+            needsRender3D: true,
+            
+            // OTIMIZAÇÃO: Gerenciamento de Threads e Throttling
+            last2DPlotTime: 0,
+            isRelayouting: false,
+            heavyMathDebounceTimer: null,
+            cachedRoots: [],
+            cachedCriticals: [],
+            cachedIntegralVal: "0.00",
+            cachedIntegralTrace: null
         };
 
         const errorEl = document.getElementById('fn-error');
@@ -712,6 +788,7 @@
         const sidebarRight = document.getElementById('sidebar-right');
         const presetSelect = document.getElementById('preset-select');
         const sectionCalculus = document.getElementById('section-calculus');
+        const section3dCalculus = document.getElementById('section-3d-calculus');
         const xminInput = document.getElementById('xmin-input');
         const xmaxInput = document.getElementById('xmax-input');
         const yminInput = document.getElementById('ymin-input');
@@ -746,19 +823,52 @@
             };
         }
 
-        window.debouncedGraphUpdate = debounce(() => updateGraph(), 100);
+        // OTIMIZAÇÃO: Agendamento estendido para cálculos matemáticos pesados
+        function scheduleHeavyMathCalculation() {
+            if (State.heavyMathDebounceTimer) clearTimeout(State.heavyMathDebounceTimer);
+            State.heavyMathDebounceTimer = setTimeout(() => {
+                if (!State.isPlaying && !State.isInteracting) {
+                    updateGraph(false);
+                }
+            }, 200);
+        }
+
+        window.debouncedGraphUpdate = debounce(() => {
+            State.needsRender3D = true;
+            updateGraph(false);
+        }, 100);
+
         window.debouncedAxisUpdate = debounce(() => updateAxisRanges(), 150);
 
-        // Item 1 & 6: Centralização da lógica de visibilidade do painel de cálculo e abas mobile
+        function attachSliderListeners() {
+            document.querySelectorAll('.param-slider, .axis-input').forEach(input => {
+                input.addEventListener('mousedown', () => { State.isInteracting = true; });
+                input.addEventListener('touchstart', () => { State.isInteracting = true; }, { passive: true });
+                input.addEventListener('mouseup', () => { 
+                    State.isInteracting = false; 
+                    State.needsRender3D = true; 
+                    scheduleHeavyMathCalculation();
+                });
+                input.addEventListener('touchend', () => { 
+                    State.isInteracting = false; 
+                    State.needsRender3D = true; 
+                    scheduleHeavyMathCalculation();
+                });
+            });
+        }
+
         function updateCalculusVisibility() {
-            const hideCalculus = State.mode === '3D' || State.mode === 'ODE' || State.level === 'fundamental';
-            sectionCalculus.style.display = hideCalculus ? 'none' : 'block';
+            const is2dMode = State.mode === '2D' && State.level !== 'fundamental';
+            const is3dMode = State.mode === '3D';
+            
+            sectionCalculus.style.display = is2dMode ? 'block' : 'none';
+            if (section3dCalculus) section3dCalculus.style.display = is3dMode ? 'block' : 'none';
 
             const calcTabBtn = document.getElementById('mobile-tab-right');
             if (calcTabBtn) {
-                calcTabBtn.style.display = hideCalculus ? 'none' : 'block';
+                calcTabBtn.style.display = (State.mode === 'ODE' || State.level === 'fundamental') ? 'none' : 'block';
             }
-            if (hideCalculus) {
+            if (State.mode === 'ODE' || State.level === 'fundamental') {
                 switchMobileTab('left');
             }
         }
@@ -772,12 +882,12 @@
                 left.classList.remove('mobile-hidden');
                 right.classList.remove('mobile-active');
                 btns[0].classList.add('active');
-                btns[1].classList.remove('active');
+                if (btns[1]) btns[1].classList.remove('active');
             } else {
                 left.classList.add('mobile-hidden');
                 right.classList.add('mobile-active');
                 btns[0].classList.remove('active');
-                btns[1].classList.add('active');
+                if (btns[1]) btns[1].classList.add('active');
             }
         };
 
@@ -806,47 +916,65 @@
                 const div = document.createElement('div');
                 div.className = 'fn-row';
                 div.innerHTML = `
+                    <input type="checkbox" class="fn-visible-chk" ${fn.visible !== false ? 'checked' : ''} data-id="${fn.id}" title="Exibir/Ocultar Função" aria-label="Ligar ou desligar exibição da função">
                     <input type="color" class="color-picker" value="${fn.color}" data-id="${fn.id}" aria-label="Cor da função">
                     <div class="input-group">
                         <span class="input-label">${prefix}</span>
                         <input type="text" class="math-input" value="${fn.expr}" data-id="${fn.id}" autocomplete="off" spellcheck="false" aria-label="Expressão da função">
                     </div>
-                    ${(fnsToRender.length > 1 && State.mode !== 'ODE') ? `<button class="btn-remove-fn" onclick="removeFunctionInput(${fn.id})" title="Remover" aria-label="Remover função">✕</button>` : ''}
+                    ${(fnsToRender.length > 1 && State.mode !== 'ODE') ? `<button class="btn-remove-fn" onclick="removeFunctionInput('${fn.id}')" title="Remover" aria-label="Remover função">✕</button>` : ''}
                 `;
                 fnContainer.appendChild(div);
             });
 
+            fnContainer.querySelectorAll('.fn-visible-chk').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const targetFn = State.functions.find(f => f.id === id);
+                    if (targetFn) {
+                        targetFn.visible = e.target.checked;
+                        State.needsRender3D = true;
+                        updateGraph(false);
+                    }
+                });
+            });
+
             fnContainer.querySelectorAll('.color-picker').forEach(input => {
                 input.addEventListener('input', (e) => {
-                    const id = parseInt(e.target.getAttribute('data-id'));
+                    const id = e.target.getAttribute('data-id');
                     const targetFn = State.functions.find(f => f.id === id);
                     if (targetFn) {
                         targetFn.color = e.target.value;
-                        updateGraph();
+                        State.needsRender3D = true;
+                        updateGraph(false);
                     }
                 });
             });
 
             fnContainer.querySelectorAll('.math-input').forEach(input => {
                 input.addEventListener('input', (e) => {
-                    const id = parseInt(e.target.getAttribute('data-id'));
+                    const id = e.target.getAttribute('data-id');
                     const targetFn = State.functions.find(f => f.id === id);
                     if (targetFn) {
                         targetFn.expr = e.target.value;
                         compileMath();
-                        updateGraph();
+                        State.needsRender3D = true;
+                        updateGraph(false);
                     }
                 });
             });
+            
+            attachSliderListeners();
         }
 
         window.addFunctionInput = function(expr = State.mode === '3D' ? 'cos(x + y)' : 'cos(x)') {
             if (State.mode === 'ODE') return;
             const color = COLOR_PALETTE[State.functions.length % COLOR_PALETTE.length];
-            State.functions.push({ id: State.nextFnId++, expr: expr, color: color, compiledFn: null });
+            State.functions.push({ id: generateUniqueId(), expr: expr, color: color, compiledFn: null, visible: true });
             renderFunctionInputs();
             compileMath();
-            updateGraph();
+            State.needsRender3D = true;
+            updateGraph(false);
         };
 
         window.removeFunctionInput = function(id) {
@@ -854,10 +982,10 @@
             State.functions = State.functions.filter(f => f.id !== id);
             renderFunctionInputs();
             compileMath();
-            updateGraph();
+            State.needsRender3D = true;
+            updateGraph(false);
         };
 
-        // Item 6: Ajuste de Interface Mobile no Nível Fundamental integrado
         window.setPedagogicalLevel = function(level) {
             State.level = level;
             presetSelect.innerHTML = '<option value="">Selecione uma função padrão...</option>';
@@ -870,23 +998,23 @@
             });
 
             if (level === 'fundamental') {
-                State.functions = [{ id: 1, expr: "a*x", color: COLOR_PALETTE[0], compiledFn: null }];
+                State.functions = [{ id: generateUniqueId(), expr: "a*x", color: COLOR_PALETTE[0], compiledFn: null, visible: true }];
                 setMode('2D');
             } else if (level === 'medio') {
-                State.functions = [{ id: 1, expr: "-a*x^2 + b*x", color: COLOR_PALETTE[0], compiledFn: null }];
+                State.functions = [{ id: generateUniqueId(), expr: "-a*x^2 + b*x", color: COLOR_PALETTE[0], compiledFn: null, visible: true }];
                 setMode('2D');
             } else if (level === 'superior') {
-                State.functions = [{ id: 1, expr: "a*(x^2 + y^2)", color: COLOR_PALETTE[0], compiledFn: null }];
+                State.functions = [{ id: generateUniqueId(), expr: "a*(x^2 + y^2)", color: COLOR_PALETTE[0], compiledFn: null, visible: true }];
                 setMode('3D');
             }
 
             updateCalculusVisibility();
             renderFunctionInputs();
             compileMath();
-            updateGraph();
+            State.needsRender3D = true;
+            updateGraph(false);
         };
 
-        // Item 2: Tratamento e validação AST da variável 'y' no modo 2D
         function compileMath() {
             let hasError = false;
             let customErrorMessage = "Verifique a sintaxe matemática nas áreas em vermelho.";
@@ -897,7 +1025,6 @@
                     const expr = fn.expr.trim();
                     if (!expr) throw new Error("Expressão vazia");
 
-                    // Validação AST para interceptar 'y' em 2D
                     if (State.mode === '2D') {
                         const parsedNode = math.parse(expr);
                         const hasYVariable = parsedNode.filter(node => node.isSymbolNode && node.name === 'y').length > 0;
@@ -911,7 +1038,10 @@
                         ? { x: 1, t: 0, a: 1, b: 1, c: 1 }
                         : { x: 1, y: 1, t: 0, a: 1, b: 1, c: 1 };
                     
-                    compiled.evaluate(testScope);
+                    const res = compiled.evaluate(testScope);
+                    if (typeof res === 'number' && (isNaN(res) || !isFinite(res))) {
+                        throw new Error("Fora do domínio real");
+                    }
                     fn.compiledFn = compiled;
                     if (inputEl) inputEl.classList.remove('input-error');
                 } catch (err) {
@@ -920,7 +1050,7 @@
                     if (inputEl) inputEl.classList.add('input-error');
 
                     if (err.message === "ERR_VARIABLE_Y_IN_2D") {
-                        customErrorMessage = "A variável 'y' não é permitida no modo 2D. Alterne para o modo 3D ou EDO para utilizar superfícies ou campos vetoriais.";
+                        customErrorMessage = "A variável 'y' não é permitida no modo 2D. Alterne para 3D ou EDO.";
                     }
                 }
             });
@@ -932,16 +1062,48 @@
         tSlider.addEventListener('input', (e) => { 
             State.t = parseFloat(e.target.value); 
             tDisplay.innerText = State.t.toFixed(2);
-            if(!State.isPlaying) updateGraph();
+            State.needsRender3D = true;
+            if(!State.isPlaying) updateGraph(true);
         });
 
         tangentSlider.addEventListener('input', (e) => {
             tangentVal.innerText = parseFloat(e.target.value).toFixed(2);
-            updateGraph();
+            updateGraph(false);
         });
 
-        window.toggleTangent = function(val) { State.showTangent = val; updateGraph(); };
-        window.toggleIntegral = function(val) { State.showIntegral = val; updateGraph(); };
+        window.toggleRoots = function(val) { State.showRoots = val; updateGraph(false); };
+        window.toggleCritical = function(val) { State.showCritical = val; updateGraph(false); };
+        window.toggleTangent = function(val) { State.showTangent = val; updateGraph(false); };
+        window.toggleIntegral = function(val) { State.showIntegral = val; updateGraph(false); };
+
+        window.toggleWireframe = function(val) {
+            State.showWireframe = val;
+            surfacesMap.forEach(entry => {
+                if (entry.material) entry.material.wireframe = val;
+            });
+            State.needsRender3D = true;
+        };
+
+        window.toggleTransparency = function(val) {
+            surfacesMap.forEach(entry => {
+                if (entry.material) {
+                    entry.material.transparent = val;
+                    entry.material.opacity = val ? State.surfaceOpacity : 1.0;
+                }
+            });
+            State.needsRender3D = true;
+        };
+
+        window.updateOpacity = function(val) {
+            State.surfaceOpacity = parseFloat(val);
+            document.getElementById('val-opacity').innerText = `${Math.round(State.surfaceOpacity * 100)}%`;
+            surfacesMap.forEach(entry => {
+                if (entry.material && entry.material.transparent) {
+                    entry.material.opacity = State.surfaceOpacity;
+                }
+            });
+            State.needsRender3D = true;
+        };
 
         window.loadPreset = function(key) {
             if(!key) return;
@@ -958,15 +1120,11 @@
             
             renderFunctionInputs();
             compileMath();
-            updateGraph();
+            State.needsRender3D = true;
+            updateGraph(false);
         };
 
-        // Item 3: Atualização síncrona imediata ao alternar o Modo Escuro
-        window.toggleDarkMode = function() {
-            State.isDarkMode = !State.isDarkMode;
-            document.body.classList.toggle('dark-mode', State.isDarkMode);
-            document.getElementById('dark-btn-text').innerText = State.isDarkMode ? 'Light Mode' : 'Dark Mode';
-            
+        window.syncTheme = function() {
             const bg = State.isDarkMode ? '#090D16' : '#F8FAFC';
             const gridColor = State.isDarkMode ? '#334155' : '#CBD5E1';
             const textColor = State.isDarkMode ? '#F8FAFC' : '#0F172A';
@@ -989,8 +1147,23 @@
                 scene.background.set(State.isDarkMode ? 0x090D16 : 0xF8FAFC);
             }
 
-            // Força a re-renderização síncrona dos vetores e elementos gráficos
+            if (typeof grid !== 'undefined' && typeof scene !== 'undefined') {
+                scene.remove(grid);
+                grid = new THREE.GridHelper(20, 40, State.isDarkMode ? 0x38BDF8 : 0x94A3B8, State.isDarkMode ? 0x334155 : 0xE2E8F0);
+                grid.position.y = -0.01;
+                grid.visible = State.showGrid;
+                scene.add(grid);
+            }
+
+            State.needsRender3D = true;
             updateGraph(false);
+        };
+
+        window.toggleDarkMode = function() {
+            State.isDarkMode = !State.isDarkMode;
+            document.body.classList.toggle('dark-mode', State.isDarkMode);
+            document.getElementById('dark-btn-text').innerText = State.isDarkMode ? 'Light Mode' : 'Dark Mode';
+            syncTheme();
         };
 
         window.togglePresentationMode = function() {
@@ -1006,6 +1179,7 @@
             State.showGrid = show;
             Plotly.relayout('plot-2d', { 'xaxis.showgrid': show, 'yaxis.showgrid': show });
             if (typeof grid !== 'undefined') grid.visible = show;
+            State.needsRender3D = true;
         };
 
         window.toggleAxisValues = function(show) {
@@ -1028,6 +1202,7 @@
                 if (State.mode === '3D') {
                     controls.reset();
                     camera.position.set(15, 15, 15);
+                    State.needsRender3D = true;
                 } else {
                     updateAxisRanges();
                 }
@@ -1059,8 +1234,11 @@
 
         Plotly.newPlot('plot-2d', [], layout2D, { responsive: true, displayModeBar: false, scrollZoom: true });
 
-        // Item 4: Desacoplamento do Feedback Loop na digitação dos eixos
+        // OTIMIZAÇÃO: Blindagem de Eventos do Plotly para evitar reentrância
         document.getElementById('plot-2d').on('plotly_relayout', function(eventData) {
+            if (State.isRelayouting) return;
+            State.isRelayouting = true;
+
             let x0, x1, y0, y1;
             if (eventData['xaxis.range[0]'] !== undefined) {
                 x0 = eventData['xaxis.range[0]'];
@@ -1077,7 +1255,6 @@
                 y1 = eventData['yaxis.range'][1];
             }
 
-            // Bloqueia a sobrescrita caso o usuário esteja focando em um dos inputs
             const activeEl = document.activeElement;
             const isEditingAxis = activeEl === xminInput || activeEl === xmaxInput || 
                                   activeEl === yminInput || activeEl === ymaxInput;
@@ -1103,6 +1280,8 @@
             if (updated) {
                 debouncedGraphUpdate();
             }
+
+            State.isRelayouting = false;
         });
 
         window.updateAxisRanges = function() {
@@ -1112,33 +1291,147 @@
             const ymax = parseFloat(ymaxInput.value) || 5;
             layout2D.xaxis.range = [xmin, xmax];
             layout2D.yaxis.range = [ymin, ymax];
-            Plotly.relayout('plot-2d', { 'xaxis.range': [xmin, xmax], 'yaxis.range': [ymin, ymax] });
+            
+            State.isRelayouting = true;
+            Plotly.relayout('plot-2d', { 'xaxis.range': [xmin, xmax], 'yaxis.range': [ymin, ymax] }).then(() => {
+                State.isRelayouting = false;
+            });
         };
 
+        function findRoots(compiledFn, scope, xmin, xmax) {
+            if (!compiledFn) return [];
+            const roots = [];
+            const steps = 180;
+            const stepSize = (xmax - xmin) / steps;
+            const jumpThreshold = Math.abs(xmax - xmin) * 2;
+
+            const evalF = (x) => {
+                try {
+                    scope.x = x;
+                    const res = compiledFn.evaluate(scope);
+                    return (typeof res === 'number' && !isNaN(res) && isFinite(res)) ? res : null;
+                } catch(e) { return null; }
+            };
+
+            let x1 = xmin;
+            let y1 = evalF(x1);
+
+            for (let i = 1; i <= steps; i++) {
+                let x2 = xmin + i * stepSize;
+                let y2 = evalF(x2);
+
+                if (y1 !== null && y2 !== null) {
+                    if (Math.abs(y2 - y1) < jumpThreshold) {
+                        if (Math.abs(y1) < 1e-6) {
+                            if (!roots.some(r => Math.abs(r - x1) < 1e-3)) roots.push(x1);
+                        } else if (y1 * y2 < 0) {
+                            let a = x1, b = x2;
+                            let root = (a + b) / 2;
+                            for (let iter = 0; iter < 10; iter++) {
+                                root = (a + b) / 2;
+                                let yMid = evalF(root);
+                                if (yMid === null || Math.abs(yMid) < 1e-7) break;
+                                if (y1 * yMid < 0) { b = root; } else { a = root; y1 = yMid; }
+                            }
+                            let finalVal = evalF(root);
+                            if (finalVal !== null && Math.abs(finalVal) < 1e-2) {
+                                if (!roots.some(r => Math.abs(r - root) < 1e-3)) {
+                                    roots.push(root);
+                                }
+                            }
+                        }
+                    }
+                }
+                x1 = x2;
+                y1 = y2;
+            }
+            return roots;
+        }
+
+        function findCriticalPoints(fnObj, scope, xmin, xmax) {
+            if (!fnObj || !fnObj.compiledFn) return [];
+            const criticals = [];
+
+            const scopeVal = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c, x: 0 };
+            const evalF = (x) => {
+                try {
+                    scopeVal.x = x;
+                    const res = fnObj.compiledFn.evaluate(scopeVal);
+                    return (typeof res === 'number' && !isNaN(res) && isFinite(res)) ? res : null;
+                } catch(e) { return null; }
+            };
+
+            const steps = 150;
+            const stepSize = (xmax - xmin) / steps;
+            const h = 1e-4;
+            const jumpThreshold = Math.abs(xmax - xmin) * 2;
+
+            const evalDeriv = (x) => {
+                const yPlus = evalF(x + h);
+                const yMinus = evalF(x - h);
+                if (yPlus === null || yMinus === null) return null;
+                if (Math.abs(yPlus - yMinus) > jumpThreshold) return null;
+                return (yPlus - yMinus) / (2 * h);
+            };
+
+            let x1 = xmin;
+            let d1 = evalDeriv(x1);
+
+            for (let i = 1; i <= steps; i++) {
+                let x2 = xmin + i * stepSize;
+                let d2 = evalDeriv(x2);
+
+                if (d1 !== null && d2 !== null) {
+                    if (d1 * d2 <= 0) {
+                        let a = x1, b = x2;
+                        let cX = (a + b) / 2;
+                        for (let iter = 0; iter < 10; iter++) {
+                            cX = (a + b) / 2;
+                            let dMid = evalDeriv(cX);
+                            if (dMid === null || Math.abs(dMid) < 1e-6) break;
+                            if (d1 * dMid < 0) { b = cX; } else { a = cX; d1 = dMid; }
+                        }
+                        const cY = evalF(cX);
+                        if (cY !== null && cX >= xmin && cX <= xmax) {
+                            if (!criticals.some(c => Math.abs(c.x - cX) < 1e-2)) {
+                                criticals.push({ x: cX, y: cY });
+                            }
+                        }
+                    }
+                }
+                x1 = x2;
+                d1 = d2;
+            }
+            return criticals;
+        }
+
+        // OTIMIZAÇÃO: Curva rápida com amostragem inteligente + adiamento de cálculos pesados
         function update2D(isAnimation = false) {
+            const isFastRender = isAnimation || State.isInteracting;
             const xmin = layout2D.xaxis.range ? layout2D.xaxis.range[0] : (parseFloat(xminInput.value) || -5);
             const xmax = layout2D.xaxis.range ? layout2D.xaxis.range[1] : (parseFloat(xmaxInput.value) || 5);
-            const numPoints = 800;
+            
+            // 50 pontos na animação/interação, 350 pontos no gráfico estático
+            const numPoints = isFastRender ? 50 : 350;
             const step = (xmax - xmin) / numPoints;
             const scope = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c };
-            const jumpThreshold = Math.abs(xmax - xmin) * 5; 
+            const jumpThreshold = Math.abs(xmax - xmin) * 4; 
 
             const traces = [];
 
-            State.functions.forEach((fnObj) => {
-                if (!fnObj.compiledFn) return;
+            State.functions.forEach((fnObj, idx) => {
+                if (!fnObj.compiledFn || fnObj.visible === false) return;
                 const xVals = [], yVals = [];
                 for (let i = 0; i <= numPoints; i++) {
                     let x = xmin + i * step;
                     scope.x = x;
                     try {
                         let y = fnObj.compiledFn.evaluate(scope);
-                        
                         if (typeof y !== 'number' || isNaN(y) || !isFinite(y)) {
                             y = null;
                         } else if (yVals.length > 0) {
                             let prevY = yVals[yVals.length - 1];
-                            if (prevY !== null && y !== null && Math.abs(y - prevY) > jumpThreshold) {
+                            if (prevY !== null && Math.abs(y - prevY) > jumpThreshold) {
                                 yVals.push(null);
                                 xVals.push(x - step/2); 
                             }
@@ -1150,87 +1443,125 @@
                 }
                 traces.push({
                     x: xVals, y: yVals, type: 'scatter', mode: 'lines',
-                    line: { color: fnObj.color, width: 3 }, name: fnObj.expr
+                    line: { color: fnObj.color, width: 3 }, name: fnObj.expr || `f${idx+1}(x)`
                 });
             });
 
-            const primaryFn = State.functions[0] ? State.functions[0].compiledFn : null;
-            
-            let intX = [], intY = [], integralVal = 0;
+            const primaryVisibleFnObj = State.functions.find(f => f.compiledFn && f.visible !== false);
+            const primaryFn = primaryVisibleFnObj ? primaryVisibleFnObj.compiledFn : null;
+
+            // INTEGRAL: recalculada apenas em repouso ou aproximada rapidamente
             if (State.showIntegral && State.level !== 'fundamental' && State.mode !== 'ODE' && primaryFn) {
-                const a = parseFloat(document.getElementById('integral-a').value) || -2;
-                const b = parseFloat(document.getElementById('integral-b').value) || 2;
-                const n = 100;
-                const h = (b - a) / n;
-                intX.push(a); intY.push(0);
-                for (let i = 0; i <= n; i++) {
-                    let xi = a + i * h;
-                    scope.x = xi;
-                    let yi = 0;
-                    try {
-                        yi = primaryFn.evaluate(scope);
-                        if (typeof yi !== 'number' || isNaN(yi) || !isFinite(yi)) yi = 0;
-                    } catch(e) { yi = 0; }
+                if (!isFastRender) {
+                    const a = parseFloat(document.getElementById('integral-a').value) || -2;
+                    const b = parseFloat(document.getElementById('integral-b').value) || 2;
+                    const n = 120;
+                    const h = (b - a) / n;
+                    let intX = [], intY = [], integralVal = 0, isDomainError = false;
                     
-                    intX.push(xi); intY.push(yi);
-                    if (i > 0 && i < n) integralVal += yi;
-                    else if (i === 0 || i === n) integralVal += yi / 2;
+                    intX.push(a); intY.push(0);
+                    for (let i = 0; i <= n; i++) {
+                        let xi = a + i * h;
+                        scope.x = xi;
+                        let yi = 0;
+                        try {
+                            yi = primaryFn.evaluate(scope);
+                            if (typeof yi !== 'number' || isNaN(yi) || !isFinite(yi)) {
+                                isDomainError = true;
+                                yi = 0;
+                            }
+                        } catch(e) { isDomainError = true; yi = 0; }
+                        
+                        intX.push(xi); intY.push(yi);
+                        if (i > 0 && i < n) integralVal += yi;
+                        else if (i === 0 || i === n) integralVal += yi / 2;
+                    }
+                    integralVal *= h;
+                    intX.push(b); intY.push(0);
+
+                    State.cachedIntegralVal = isDomainError ? "Indefinido (fora do domínio real)" : `${integralVal.toFixed(4)}`;
+                    State.cachedIntegralTrace = {
+                        x: intX, y: intY, type: 'scatter', mode: 'tozeroy', fill: 'tozeroy',
+                        fillcolor: 'rgba(2, 132, 199, 0.15)', line: { color: 'transparent' }, name: 'Integral'
+                    };
                 }
-                integralVal *= h;
-                intX.push(b); intY.push(0);
-                integralInfo.innerText = `∫ f(x)dx ≈ ${integralVal.toFixed(4)}`;
-                
-                traces.push({
-                    x: intX, y: intY, type: 'scatter', mode: 'tozeroy', fill: 'tozeroy',
-                    fillcolor: 'rgba(2, 132, 199, 0.15)', line: { color: 'transparent' }, name: 'Integral (f₁)'
-                });
+                if (integralInfo) integralInfo.innerText = `∫ f(x)dx ≈ ${State.cachedIntegralVal}`;
+                if (State.cachedIntegralTrace) traces.push(State.cachedIntegralTrace);
             } else {
-                integralInfo.innerText = `∫ f(x)dx ≈ 0.00`;
+                if (integralInfo) integralInfo.innerText = `∫ f(x)dx ≈ 0.00`;
             }
 
-            let tanX = [], tanY = [], ptX = [], ptY = [];
+            // DERIVADA & TANGENTE
             if (State.showTangent && State.level !== 'fundamental' && State.mode !== 'ODE' && primaryFn) {
                 const x0 = parseFloat(tangentSlider.value);
                 scope.x = x0;
-                let y0 = 0, yPlus = 0, yMinus = 0;
+                let y0 = null, yPlus = null, yMinus = null;
+                const delta = 0.0001;
+
                 try {
                     y0 = primaryFn.evaluate(scope);
-                    const delta = 0.0001;
                     scope.x = x0 + delta;
                     yPlus = primaryFn.evaluate(scope);
                     scope.x = x0 - delta;
                     yMinus = primaryFn.evaluate(scope);
                 } catch(e) {}
-                
-                let deriv = (yPlus - yMinus) / 0.0002;
-                if (isNaN(deriv) || !isFinite(deriv)) deriv = 0;
 
-                derivativeInfo.innerText = `Derivada f'(${x0.toFixed(2)}) = ${deriv.toFixed(4)}`;
-                
-                let tanLen = (xmax - xmin) * 0.15;
-                tanX = [x0 - tanLen, x0 + tanLen];
-                tanY = [y0 - deriv * tanLen, y0 + deriv * tanLen];
-                ptX = [x0]; ptY = [y0];
+                if (y0 === null || typeof y0 !== 'number' || isNaN(y0) || !isFinite(y0) ||
+                    yPlus === null || typeof yPlus !== 'number' || isNaN(yPlus) || !isFinite(yPlus) ||
+                    yMinus === null || typeof yMinus !== 'number' || isNaN(yMinus) || !isFinite(yMinus)) {
+                    if (derivativeInfo) derivativeInfo.innerText = `Derivada f'(${x0.toFixed(2)}) = Fora do domínio real`;
+                } else {
+                    let deriv = (yPlus - yMinus) / (2 * delta);
+                    if (isNaN(deriv) || !isFinite(deriv)) {
+                        if (derivativeInfo) derivativeInfo.innerText = `Derivada f'(${x0.toFixed(2)}) = Indefinida`;
+                    } else {
+                        if (derivativeInfo) derivativeInfo.innerText = `Derivada f'(${x0.toFixed(2)}) = ${deriv.toFixed(4)}`;
+                        
+                        let tanLen = (xmax - xmin) * 0.15;
+                        let tanX = [x0 - tanLen, x0 + tanLen];
+                        let tanY = [y0 - deriv * tanLen, y0 + deriv * tanLen];
 
-                traces.push({ x: tanX, y: tanY, type: 'scatter', mode: 'lines', line: { color: '#EF4444', width: 2, dash: 'dash' }, name: 'Reta Tangente' });
-                traces.push({ x: ptX, y: ptY, type: 'scatter', mode: 'markers', marker: { color: '#EF4444', size: 10 }, name: 'P(x₀)' });
+                        traces.push({ x: tanX, y: tanY, type: 'scatter', mode: 'lines', line: { color: '#EF4444', width: 2, dash: 'dash' }, name: 'Reta Tangente' });
+                        traces.push({ x: [x0], y: [y0], type: 'scatter', mode: 'markers', marker: { color: '#EF4444', size: 9 }, name: 'P(x₀)', hoverinfo: 'text', text: [`P(${x0.toFixed(2)}, ${y0.toFixed(2)})`] });
+                    }
+                }
             } else {
-                derivativeInfo.innerText = `Derivada f'(x₀) = 0.00`;
+                if (derivativeInfo) derivativeInfo.innerText = `Derivada f'(x₀) = 0.00`;
             }
 
-            const currentGraph = document.getElementById('plot-2d');
-            if (isAnimation && currentGraph.data && currentGraph.data.length === traces.length) {
-                const updateX = traces.map(t => t.x);
-                const updateY = traces.map(t => t.y);
-                Plotly.restyle('plot-2d', {x: updateX, y: updateY});
-            } else {
-                Plotly.react('plot-2d', traces, layout2D);
+            // RAÍZES E CRÍTICOS: Calculados e renderizados APENAS em repouso estático
+            if (!isFastRender) {
+                if (State.showRoots && State.mode === '2D' && primaryFn) {
+                    State.cachedRoots = findRoots(primaryFn, scope, xmin, xmax);
+                }
+                if (State.showCritical && State.mode === '2D' && primaryVisibleFnObj) {
+                    State.cachedCriticals = findCriticalPoints(primaryVisibleFnObj, scope, xmin, xmax);
+                }
             }
+
+            if (State.showRoots && State.mode === '2D' && State.cachedRoots.length > 0) {
+                traces.push({
+                    x: State.cachedRoots, y: State.cachedRoots.map(() => 0), type: 'scatter', mode: 'markers',
+                    marker: { color: '#10B981', size: 10, line: { color: '#FFFFFF', width: 2 } },
+                    name: 'Raízes', hoverinfo: 'text', text: State.cachedRoots.map(r => `Raiz: (${r.toFixed(3)}, 0)`)
+                });
+            }
+
+            if (State.showCritical && State.mode === '2D' && State.cachedCriticals.length > 0) {
+                traces.push({
+                    x: State.cachedCriticals.map(c => c.x), y: State.cachedCriticals.map(c => c.y), type: 'scatter', mode: 'markers',
+                    marker: { symbol: 'diamond', color: '#F59E0B', size: 11, line: { color: '#FFFFFF', width: 2 } },
+                    name: 'Vértice/Crítico', hoverinfo: 'text', text: State.cachedCriticals.map(c => `Vértice/Crítico: (${c.x.toFixed(3)}, ${c.y.toFixed(3)})`)
+                });
+            }
+
+            Plotly.react('plot-2d', traces, layout2D);
         }
 
+        // OTIMIZAÇÃO: EDO sem redefinir array de shapes a menos que necessário
         function updateODE(isAnimation = false) {
             const fnObj = State.functions[0];
-            if (!fnObj || !fnObj.compiledFn) {
+            if (!fnObj || !fnObj.compiledFn || fnObj.visible === false) {
                 Plotly.react('plot-2d', [], Object.assign({}, layout2D, { shapes: [] }));
                 return;
             }
@@ -1245,8 +1576,10 @@
             const shapes = [];
             const lineColor = State.isDarkMode ? '#38BDF8' : '#0284C7';
             const evalFn = fnObj.compiledFn.evaluate;
-            const stepX = (xmax - xmin) / 10;
-            const stepY = (ymax - ymin) / 10;
+            
+            const numGrid = (isAnimation || State.isInteracting) ? 8 : 12;
+            const stepX = (xmax - xmin) / numGrid;
+            const stepY = (ymax - ymin) / numGrid;
             
             for (let x = xmin; x <= xmax; x += stepX) {
                 for (let y = ymin; y <= ymax; y += stepY) {
@@ -1271,7 +1604,6 @@
             Plotly.react('plot-2d', [], Object.assign({}, layout2D, { shapes: shapes }));
         }
 
-        // --- MOTOR THREE.JS 3D ---
         const container3D = document.getElementById('plot-3d');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xF8FAFC);
@@ -1281,17 +1613,19 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio || 1);
         container3D.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
+        controls.addEventListener('change', () => { State.needsRender3D = true; });
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(10, 20, 10);
         scene.add(dirLight);
 
-        const grid = new THREE.GridHelper(20, 40, 0x94A3B8, 0xE2E8F0);
+        let grid = new THREE.GridHelper(20, 40, 0x94A3B8, 0xE2E8F0);
         grid.position.y = -0.01;
         scene.add(grid);
 
@@ -1299,31 +1633,33 @@
         scene.add(surfaceGroup);
         const surfacesMap = new Map();
 
+        // OTIMIZAÇÃO: Descarte adequado de geometrias/materiais com .dispose()
         function update3D(isAnimation = false) {
-            const activeIds = new Set(State.functions.map(f => f.id));
+            const activeIds = new Set(State.functions.filter(f => f.visible !== false).map(f => f.id));
 
             surfacesMap.forEach((entry, id) => {
                 if (!activeIds.has(id)) {
                     surfaceGroup.remove(entry.mesh);
-                    entry.geometry.dispose();
-                    entry.material.dispose();
+                    if (entry.geometry) entry.geometry.dispose();
+                    if (entry.material) entry.material.dispose();
                     surfacesMap.delete(id);
                 }
             });
 
             State.functions.forEach((fnObj) => {
+                if (fnObj.visible === false) return;
                 let entry = surfacesMap.get(fnObj.id);
 
                 if (!entry) {
-                    const geom = new THREE.PlaneGeometry(20, 20, 45, 45);
+                    const geom = new THREE.PlaneGeometry(20, 20, 40, 40);
                     geom.rotateX(-Math.PI / 2);
                     
                     const mat = new THREE.MeshStandardMaterial({
                         color: fnObj.color,
-                        wireframe: false,
+                        wireframe: State.showWireframe,
                         side: THREE.DoubleSide,
                         transparent: true,
-                        opacity: 0.75,
+                        opacity: State.surfaceOpacity,
                         roughness: 0.2
                     });
 
@@ -1334,6 +1670,7 @@
                     surfacesMap.set(fnObj.id, entry);
                 } else {
                     entry.material.color.set(fnObj.color);
+                    entry.material.wireframe = State.showWireframe;
                 }
 
                 const positions = entry.geometry.attributes.position;
@@ -1379,6 +1716,32 @@
                     entry.geometry.computeVertexNormals();
                 }
             });
+
+            const active3DFnObj = State.functions.find(f => f.compiledFn && f.visible !== false);
+            if (active3DFnObj && active3DFnObj.compiledFn) {
+                const scope3D = { t: State.t, a: State.params.a, b: State.params.b, c: State.params.c, x: 1, y: 1 };
+                const h = 0.0001;
+                try {
+                    const z0 = active3DFnObj.compiledFn.evaluate(scope3D);
+                    scope3D.x = 1 + h;
+                    const zX = active3DFnObj.compiledFn.evaluate(scope3D);
+                    scope3D.x = 1; scope3D.y = 1 + h;
+                    const zY = active3DFnObj.compiledFn.evaluate(scope3D);
+
+                    const dzdx = (zX - z0) / h;
+                    const dzdy = (zY - z0) / h;
+
+                    const pXEl = document.getElementById('partial-info-x');
+                    const pYEl = document.getElementById('partial-info-y');
+                    if (pXEl) pXEl.innerText = `∂z/∂x (1,1) = ${dzdx.toFixed(4)}`;
+                    if (pYEl) pYEl.innerText = `∂z/∂y (1,1) = ${dzdy.toFixed(4)}`;
+                } catch(e) {
+                    const pXEl = document.getElementById('partial-info-x');
+                    const pYEl = document.getElementById('partial-info-y');
+                    if (pXEl) pXEl.innerText = `∂z/∂x (1,1) = Indefinido`;
+                    if (pYEl) pYEl.innerText = `∂z/∂y (1,1) = Indefinido`;
+                }
+            }
         }
 
         function updateGraph(isAnimation = false) {
@@ -1387,10 +1750,19 @@
             else if (State.mode === '3D') update3D(isAnimation);
         }
 
-        let lastTime = performance.now();
+        // OTIMIZAÇÃO: Decoupling entre Renderizador WebGL (60 FPS) e Plotly 2D (throttled a 15-20 FPS)
+        const TARGET_FPS = 60;
+        const FRAME_INTERVAL = 1000 / TARGET_FPS;
+        let lastFrameTime = performance.now();
+
         function renderFrame(time) {
-            const dt = (time - lastTime) / 1000;
-            lastTime = time;
+            requestAnimationFrame(renderFrame);
+
+            const elapsed = time - lastFrameTime;
+            if (elapsed < FRAME_INTERVAL) return;
+            lastFrameTime = time - (elapsed % FRAME_INTERVAL);
+
+            const dt = elapsed / 1000;
 
             if (State.isPlaying) {
                 const safeDt = dt > 0.1 ? 0.016 : dt; 
@@ -1399,21 +1771,36 @@
                 if (State.t > parseFloat(tSlider.max)) State.t = 0;
                 tSlider.value = State.t;
                 tDisplay.innerText = State.t.toFixed(2);
-                updateGraph(true);
+                State.needsRender3D = true;
+
+                // Throttling do Plotly 2D a ~15 FPS
+                if (State.mode === '2D' || State.mode === 'ODE') {
+                    if (time - State.last2DPlotTime > 66) {
+                        State.last2DPlotTime = time;
+                        updateGraph(true);
+                    }
+                }
             }
+
             if (State.mode === '3D') { 
-                controls.update(); 
-                renderer.render(scene, camera); 
+                const controlsUpdated = controls.update();
+                if (State.isPlaying) update3D(true);
+                
+                if (State.isPlaying || State.needsRender3D || controlsUpdated || State.isInteracting) {
+                    renderer.render(scene, camera);
+                    State.needsRender3D = false;
+                }
             }
-            requestAnimationFrame(renderFrame);
         }
 
         window.togglePlay = function() {
             State.isPlaying = !State.isPlaying;
             btnPlay.innerText = State.isPlaying ? '⏸' : '▶';
+            if (!State.isPlaying) {
+                scheduleHeavyMathCalculation();
+            }
         };
 
-        // Item 1 e Item 5: Abstração de visibilidade e purga do array no modo EDO
         window.setMode = function(mode) {
             State.mode = mode;
             document.body.className = `mode-${mode.toLowerCase()}` + 
@@ -1426,8 +1813,6 @@
             const addBtn = document.getElementById('btn-add-fn');
             if (mode === 'ODE') {
                 if (addBtn) addBtn.style.display = 'none';
-                
-                // Purga e isola o estado para conter estritamente a primeira função (Item 5)
                 if (State.functions.length > 1) {
                     State.functions = [State.functions[0]];
                 }
@@ -1435,7 +1820,29 @@
                 if (addBtn) addBtn.style.display = 'block';
             }
 
-            // Centralização de visibilidade do cálculo (Item 1)
+            const varHelper = document.getElementById('variable-helper-text');
+            if (varHelper) {
+                if (mode === '3D') {
+                    varHelper.innerHTML = 'Variáveis: <b>x</b>, <b>y</b>, tempo <b>t</b>, parâmetros <b>a, b, c</b>.';
+                } else if (mode === 'ODE') {
+                    varHelper.innerHTML = 'Variáveis do Campo: <b>x</b>, <b>y</b>, tempo <b>t</b>.';
+                } else {
+                    varHelper.innerHTML = 'Variáveis: <b>x</b>, tempo <b>t</b>, parâmetros <b>a, b, c</b>.';
+                }
+            }
+
+            const layers2D = document.getElementById('layers-2d-group');
+            const layers3D = document.getElementById('layers-3d-group');
+            if (layers2D && layers3D) {
+                if (mode === '3D') {
+                    layers2D.style.display = 'none';
+                    layers3D.style.display = 'block';
+                } else {
+                    layers2D.style.display = 'block';
+                    layers3D.style.display = 'none';
+                }
+            }
+
             updateCalculusVisibility();
 
             if (mode !== 'ODE') {
@@ -1448,8 +1855,10 @@
             } else {
                 document.getElementById('section-2d-axis').style.display = 'block';
             }
+
             renderFunctionInputs();
             compileMath();
+            State.needsRender3D = true;
             updateGraph(false);
             onWindowResize();
         };
@@ -1460,7 +1869,7 @@
                 let csvLines = [];
 
                 if (State.mode === '2D') {
-                    const activeFns = State.functions.filter(f => f.compiledFn);
+                    const activeFns = State.functions.filter(f => f.compiledFn && f.visible !== false);
                     if (activeFns.length === 0) return;
 
                     const headers = ['X', ...activeFns.map((f, i) => `Y_f${i + 1}_(${f.expr.replace(/,/g, '')})`)];
@@ -1484,7 +1893,7 @@
                         csvLines.push(row.join(','));
                     }
                 } else if (State.mode === '3D') {
-                    const activeFns = State.functions.filter(f => f.compiledFn);
+                    const activeFns = State.functions.filter(f => f.compiledFn && f.visible !== false);
                     if (activeFns.length === 0) return;
 
                     const headers = ['X', 'Y', ...activeFns.map((f, i) => `Z_f${i + 1}_(${f.expr.replace(/,/g, '')})`)];
@@ -1550,12 +1959,14 @@
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                State.needsRender3D = true;
             } else {
                 Plotly.Plots.resize('plot-2d');
             }
         }
         window.addEventListener('resize', onWindowResize);
 
+        // Inicialização
         setPedagogicalLevel('medio');
         renderFunctionInputs();
         compileMath();
